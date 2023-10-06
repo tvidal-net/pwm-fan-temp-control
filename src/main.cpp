@@ -52,7 +52,7 @@ static void buttonPress() {
 void setupSerial() {
 #ifdef DEBUG
   Serial.begin(9600);
-  Serial.print("\n\npstemp-control ");
+  Serial.println("\n\npwm-fan-temp-control");
 #endif
 }
 
