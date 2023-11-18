@@ -16,8 +16,8 @@
 #define TIMER_INTERVAL      666
 #define BLINK_DELAY         66
 
-#define TEMP_MIN            26.0f
-#define TEMP_MAX            32.0f
+#define TEMP_MIN            22.0f
+#define TEMP_MAX            30.0f
 #define TEMP_LIMIT          50.0f
 
 #define isTempReading       digitalRead(LED_BUILTIN)
