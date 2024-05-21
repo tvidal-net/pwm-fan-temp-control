@@ -7,8 +7,8 @@
 
 #define ONE_WIRE_BUS        PIN2
 #define FAN_PWM             PIN3
-#define BTN_SW              PIN4
-#define FAN_SW              PIN5
+#define FAN_SW              PIN4
+#define BTN_SW              PIN7
 
 #define FAN_PWM_HIGH        79
 
@@ -114,13 +114,13 @@ void tempReadError(int times = 3) {
 
 float readTemperature() {
   if (isTempReading && sensors.isConversionComplete()) {
-    digitalWrite(LED_BUILTIN, LOW);
     const float temp = sensors.getTempCByIndex(0);
     if (temp != DEVICE_DISCONNECTED_C && temp <= TEMP_LIMIT) {
       temp_sum -= temp_data[temp_index];
       temp_data[temp_index] = temp;
       temp_sum += temp;
       temp_index = (temp_index + 1) % TEMP_COUNT;
+      digitalWrite(LED_BUILTIN, LOW);
       return temp_read;
     }
   }
