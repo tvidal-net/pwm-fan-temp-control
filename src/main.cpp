@@ -17,9 +17,9 @@
 #define BLINK_DELAY         66
 
 #define TEMP_COUNT          6
-#define TEMP_MIN            22.0f
+#define TEMP_MIN            25.9f
 #define TEMP_MAX            30.0f
-#define TEMP_LIMIT          50.0f
+#define TEMP_LIMIT          55.0f
 
 #define isTempReading       digitalRead(LED_BUILTIN)
 #define temp_read           (temp_sum / TEMP_COUNT)
