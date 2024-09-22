@@ -12,13 +12,16 @@
 
 #define FAN_PWM_HIGH        79
 
-#define SENSOR_RESOLUTION   9
-#define TIMER_INTERVAL      666
-#define BLINK_DELAY         66
+#define SENSOR_RESOLUTION   12
+#define TIMER_INTERVAL      2000
+#define BLINK_DELAY         50
 
-#define TEMP_COUNT          8
-#define TEMP_MIN            20.0f
-#define TEMP_MAX            32.0f
+#define PWM_FAN_MIN         0.1f
+#define PWM_FAN_MAX         1.0f
+
+#define TEMP_COUNT          5
+#define TEMP_MIN            25.5f
+#define TEMP_MAX            32.5f
 #define TEMP_LIMIT          55.0f
 
 #define isTempReading       digitalRead(LED_BUILTIN)
@@ -132,7 +135,7 @@ void setFan(const float temp) {
   digitalWrite(FAN_SW, button_override || fan_status);
 
   if (fan_read) {
-    fan_pwm = constrain((temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN), 0.2f, 1.0f);
+    fan_pwm = constrain((temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN), PWM_FAN_MIN, PWM_FAN_MAX);
     setFanPWM(fan_pwm);
   }
 }
@@ -205,5 +208,5 @@ void loop() {
   if (temperature != DEVICE_DISCONNECTED_C) {
     setFan(temperature);
   }
-  delay(1);
+  delay(20);
 }
