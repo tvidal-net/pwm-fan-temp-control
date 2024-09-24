@@ -20,8 +20,8 @@
 #define PWM_FAN_MAX         1.0f
 
 #define TEMP_COUNT          5
-#define TEMP_MIN            25.5f
-#define TEMP_MAX            32.5f
+#define TEMP_MIN            26.9f
+#define TEMP_MAX            34.9f
 #define TEMP_LIMIT          55.0f
 
 #define isTempReading       digitalRead(LED_BUILTIN)
@@ -41,6 +41,8 @@ SimpleTimer timer(TIMER_INTERVAL);
 OneButton button(BTN_SW);
 
 uint8_t temp_index = 0;
+float temp_max = 0.0f;
+float temp_min = 0.0f;
 float temp_sum = 0.0f;
 float temp_data[TEMP_COUNT];
 
@@ -134,13 +136,15 @@ void setFan(const float temp) {
   const bool fan_status = fan_read ? (temp >= TEMP_MIN) : (temp >= TEMP_MAX);
   digitalWrite(FAN_SW, button_override || fan_status);
 
+  temp_max = max(temp_max, temp_read);
   if (fan_read) {
+    temp_min = min(temp_min, temp_read);
     fan_pwm = constrain((temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN), PWM_FAN_MIN, PWM_FAN_MAX);
     setFanPWM(fan_pwm);
   }
 }
 
-void printTemperatureStatus(const float temp) {
+void printTempData(const float temp) {
   Serial.print("temp[");
   Serial.print(temp_data[0], 1);
   for (int i = 1; i < TEMP_COUNT; ++i) {
@@ -154,6 +158,15 @@ void printTemperatureStatus(const float temp) {
   Serial.print("=");
   Serial.print(temp);
   Serial.print("°C");
+}
+
+void printTempStatus(const float temp) {
+    Serial.print("temp=");
+    Serial.print(temp, 1);
+    Serial.print(" min=");
+    Serial.print(temp_min, 1);
+    Serial.print(" max=");
+    Serial.print(temp_max, 1);
 }
 
 void printFanStatus(const bool fan) {
@@ -172,9 +185,10 @@ void printButtonStatus(const bool button) {
 
 void printStatus() {
 #ifdef DEBUG
-  printTemperatureStatus(temp_read);
+  // printTempData(temp_read);
+  printTempStatus(temp_read);
   printFanStatus(fan_read);
-  printButtonStatus(button_override);
+  // printButtonStatus(button_override);
   Serial.println();
 #endif
 }
@@ -190,8 +204,11 @@ void setup() {
 }
 
 void loop() {
-  wdt_reset();
-  button.tick();
+  // read temperature and set fan status and speed
+  const float temperature = readTemperature();
+  if (temperature != DEVICE_DISCONNECTED_C) {
+    setFan(temperature);
+  }
 
   if (timer.isReady()) {
     printStatus();
@@ -203,10 +220,8 @@ void loop() {
     timer.reset();
   }
 
-  // read temperature and set fan status and speed
-  const float temperature = readTemperature();
-  if (temperature != DEVICE_DISCONNECTED_C) {
-    setFan(temperature);
-  }
+  wdt_reset();
+  button.tick();
+
   delay(20);
 }
