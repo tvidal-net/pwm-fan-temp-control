@@ -16,33 +16,31 @@
 #define TIMER_INTERVAL      2000
 #define BLINK_DELAY         50
 
-#define PWM_FAN_MIN         0.1f
+#define PWM_FAN_MIN         0.2f
 #define PWM_FAN_MAX         1.0f
 
-#define TEMP_COUNT          5
-#define TEMP_MIN            26.9f
-#define TEMP_MAX            34.9f
+#define TEMP_COUNT          8
+#define TEMP_MIN            28.0f
+#define TEMP_MAX            36.0f
 #define TEMP_LIMIT          55.0f
 
-#define isTempReading       digitalRead(LED_BUILTIN)
-#define temp_read           (temp_sum / TEMP_COUNT)
-#define fan_read            digitalRead(FAN_SW)
+#define IS_TEMP_READING     digitalRead(LED_BUILTIN)
+#define TEMP_AVG            (temp_sum / TEMP_COUNT)
+#define FAN_READ            digitalRead(FAN_SW)
 
-#define setFanPWM(pwm)      OCR2B = (uint8_t)(FAN_PWM_HIGH*(pwm+0.5f))
+#define SET_FAN_PWM(pwm)    OCR2B = (uint8_t)(FAN_PWM_HIGH*(pwm+0.5f))
 
-auto* ON = "ON";
-auto* OFF = "OFF";
+const char* ON = "ON";
+const char* OFF = "OFF";
 
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
+OneWire one_wire_bus(ONE_WIRE_BUS);
+DallasTemperature temp_sensor(&one_wire_bus);
 
 SimpleTimer timer(TIMER_INTERVAL);
 
 OneButton button(BTN_SW);
 
 uint8_t temp_index = 0;
-float temp_max = 0.0f;
-float temp_min = 0.0f;
 float temp_sum = 0.0f;
 float temp_data[TEMP_COUNT];
 
@@ -62,7 +60,7 @@ void setupSerial() {
 #endif
 }
 
-void setupTimer() {
+void setupTimerPWM() {
   TIMSK2 = TIFR2 = 0;
   TCCR2A = (1 << COM2B1) | (1 << WGM21) | (1 << WGM20);
   TCCR2B = (1 << WGM22) | (1 << CS21);
@@ -73,7 +71,7 @@ void setupTimer() {
 void setupFanControl() {
   // pwm
   pinMode(FAN_PWM, OUTPUT);
-  setupTimer();
+  setupTimerPWM();
 
   // sw
   pinMode(FAN_SW, OUTPUT);
@@ -88,12 +86,12 @@ void setupTempSensor() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
-  sensors.begin();
-  sensors.setWaitForConversion(false);
-  sensors.setResolution(SENSOR_RESOLUTION);
+  temp_sensor.begin();
+  temp_sensor.setWaitForConversion(false);
+  temp_sensor.setResolution(SENSOR_RESOLUTION);
 
-  for (int i = 0; i < TEMP_COUNT; ++i) {
-    temp_data[i] = 0.0f;
+  for (float& temp : temp_data) {
+    temp = 0.0f;
   }
   temp_sum = 0.0f;
 }
@@ -104,10 +102,10 @@ void setupButton() {
 
 void requestTemperature() {
   digitalWrite(LED_BUILTIN, HIGH);
-  sensors.requestTemperatures();
+  temp_sensor.requestTemperatures();
 }
 
-void tempReadError(int times = 3) {
+void tempReadError(const int times = 3) {
   for (int i = 0; i < times; ++i) {
     digitalWrite(LED_BUILTIN, LOW);
     delay(BLINK_DELAY);
@@ -118,55 +116,44 @@ void tempReadError(int times = 3) {
 }
 
 float readTemperature() {
-  if (isTempReading && sensors.isConversionComplete()) {
-    const float temp = sensors.getTempCByIndex(0);
-    if (temp != DEVICE_DISCONNECTED_C && temp <= TEMP_LIMIT) {
+  if (IS_TEMP_READING && temp_sensor.isConversionComplete()) {
+    const float temp_read = temp_sensor.getTempCByIndex(0);
+    if (temp_read != DEVICE_DISCONNECTED_C && temp_read <= TEMP_LIMIT) {
       temp_sum -= temp_data[temp_index];
-      temp_data[temp_index] = temp;
-      temp_sum += temp;
+      temp_data[temp_index] = temp_read;
+      temp_sum += temp_read;
       temp_index = (temp_index + 1) % TEMP_COUNT;
       digitalWrite(LED_BUILTIN, LOW);
-      return temp_read;
+      return TEMP_AVG;
     }
   }
   return DEVICE_DISCONNECTED_C;
 }
 
-void setFan(const float temp) {
-  const bool fan_status = fan_read ? (temp >= TEMP_MIN) : (temp >= TEMP_MAX);
+void setFan(const float temp_read) {
+  const bool fan_status = FAN_READ ? temp_read >= TEMP_MIN : temp_read >= TEMP_MAX;
   digitalWrite(FAN_SW, button_override || fan_status);
 
-  temp_max = max(temp_max, temp_read);
-  if (fan_read) {
-    temp_min = min(temp_min, temp_read);
-    fan_pwm = constrain((temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN), PWM_FAN_MIN, PWM_FAN_MAX);
-    setFanPWM(fan_pwm);
+  if (FAN_READ) {
+    fan_pwm = constrain((temp_read - TEMP_MIN) / (TEMP_MAX - TEMP_MIN), PWM_FAN_MIN, PWM_FAN_MAX);
+    SET_FAN_PWM(fan_pwm);
   }
 }
 
-void printTempData(const float temp) {
+void printTempData(const float temp_read) {
   Serial.print("temp[");
   Serial.print(temp_data[0], 1);
-  for (int i = 1; i < TEMP_COUNT; ++i) {
-    Serial.print(", ");
-    Serial.print(temp_data[i], 1);
+  for (const float& temp : temp_data) {
+    Serial.print(",");
+    Serial.print(temp, 1);
   }
   Serial.print("] sum=");
   Serial.print(temp_sum, 1);
   Serial.print("/");
   Serial.print(TEMP_COUNT);
   Serial.print("=");
-  Serial.print(temp);
+  Serial.print(temp_read);
   Serial.print("°C");
-}
-
-void printTempStatus(const float temp) {
-    Serial.print("temp=");
-    Serial.print(temp, 1);
-    Serial.print(" min=");
-    Serial.print(temp_min, 1);
-    Serial.print(" max=");
-    Serial.print(temp_max, 1);
 }
 
 void printFanStatus(const bool fan) {
@@ -185,8 +172,7 @@ void printButtonStatus(const bool button) {
 
 void printStatus() {
 #ifdef DEBUG
-  // printTempData(temp_read);
-  printTempStatus(temp_read);
+  printTempData(temp_read);
   printFanStatus(fan_read);
   // printButtonStatus(button_override);
   Serial.println();
@@ -205,14 +191,14 @@ void setup() {
 
 void loop() {
   // read temperature and set fan status and speed
-  const float temperature = readTemperature();
-  if (temperature != DEVICE_DISCONNECTED_C) {
-    setFan(temperature);
+  const float temp_read = readTemperature();
+  if (temp_read != DEVICE_DISCONNECTED_C) {
+    setFan(temp_read);
   }
 
   if (timer.isReady()) {
     printStatus();
-    if (isTempReading) {
+    if (IS_TEMP_READING) {
       tempReadError();
       setupTempSensor();
     }
