@@ -12,7 +12,7 @@
 
 #define FAN_PWM_HIGH        79
 
-#define SENSOR_RESOLUTION   12
+#define SENSOR_RESOLUTION   11
 #define TIMER_INTERVAL      2000
 #define BLINK_DELAY         50
 
@@ -91,9 +91,9 @@ void setupTempSensor() {
   temp_sensor.setResolution(SENSOR_RESOLUTION);
 
   for (float& temp : temp_data) {
-    temp = 0.0f;
+    temp = TEMP_LIMIT;
   }
-  temp_sum = 0.0f;
+  temp_sum = TEMP_COUNT * TEMP_LIMIT;
 }
 
 void setupButton() {
@@ -140,19 +140,15 @@ void setFan(const float temp_read) {
   }
 }
 
-void printTempData(const float temp_read) {
+void printTempData(const float temp_avg) {
   Serial.print("temp[");
   Serial.print(temp_data[0], 1);
   for (const float& temp : temp_data) {
     Serial.print(",");
     Serial.print(temp, 1);
   }
-  Serial.print("] sum=");
-  Serial.print(temp_sum, 1);
-  Serial.print("/");
-  Serial.print(TEMP_COUNT);
-  Serial.print("=");
-  Serial.print(temp_read);
+  Serial.print("] avg=");
+  Serial.print(temp_avg, 1);
   Serial.print("°C");
 }
 
@@ -161,7 +157,8 @@ void printFanStatus(const bool fan) {
   Serial.print(fan ? ON : OFF);
   if (fan) {
     Serial.print(" pwm=");
-    Serial.print(fan_pwm, 2);
+    Serial.print(fan_pwm * 100, 1);
+    Serial.print("%");
   }
 }
 
@@ -172,8 +169,8 @@ void printButtonStatus(const bool button) {
 
 void printStatus() {
 #ifdef DEBUG
-  printTempData(temp_read);
-  printFanStatus(fan_read);
+  printTempData(TEMP_AVG);
+  printFanStatus(FAN_READ);
   // printButtonStatus(button_override);
   Serial.println();
 #endif
