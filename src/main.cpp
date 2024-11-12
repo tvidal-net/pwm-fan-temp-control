@@ -23,6 +23,7 @@
 #define TEMP_MIN            28.0f
 #define TEMP_MAX            36.0f
 #define TEMP_LIMIT          55.0f
+#define TEMP_CALIBRATION    0.55f
 
 #define IS_TEMP_READING     digitalRead(LED_BUILTIN)
 #define TEMP_AVG            (temp_sum / TEMP_COUNT)
@@ -117,8 +118,9 @@ void tempReadError(const int times = 3) {
 
 float readTemperature() {
   if (IS_TEMP_READING && temp_sensor.isConversionComplete()) {
-    const float temp_read = temp_sensor.getTempCByIndex(0);
+    float temp_read = temp_sensor.getTempCByIndex(0);
     if (temp_read != DEVICE_DISCONNECTED_C && temp_read <= TEMP_LIMIT) {
+      temp_read *= TEMP_CALIBRATION;
       temp_sum -= temp_data[temp_index];
       temp_data[temp_index] = temp_read;
       temp_sum += temp_read;
@@ -143,9 +145,9 @@ void setFan(const float temp_read) {
 void printTempData(const float temp_avg) {
   Serial.print("temp[");
   Serial.print(temp_data[0], 1);
-  for (const float& temp : temp_data) {
+  for (uint8_t i = 1; i < TEMP_COUNT; i++) {
     Serial.print(",");
-    Serial.print(temp, 1);
+    Serial.print(temp_data[i], 1);
   }
   Serial.print("] avg=");
   Serial.print(temp_avg, 1);
@@ -169,6 +171,7 @@ void printButtonStatus(const bool button) {
 
 void printStatus() {
 #ifdef DEBUG
+  Serial.print("- ");
   printTempData(TEMP_AVG);
   printFanStatus(FAN_READ);
   // printButtonStatus(button_override);
