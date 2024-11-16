@@ -20,10 +20,10 @@
 #define PWM_FAN_MAX         1.0f
 
 #define TEMP_COUNT          8
-#define TEMP_MIN            28.0f
-#define TEMP_MAX            36.0f
+#define TEMP_MIN            24.0f
+#define TEMP_MAX            29.0f
 #define TEMP_LIMIT          55.0f
-#define TEMP_CALIBRATION    0.55f
+#define TEMP_CALIBRATION    0.90f
 
 #define IS_TEMP_READING     digitalRead(LED_BUILTIN)
 #define TEMP_AVG            (temp_sum / TEMP_COUNT)
@@ -48,6 +48,12 @@ float temp_data[TEMP_COUNT];
 float fan_pwm = 0.0f;
 
 bool button_override = false;
+
+static
+struct {
+    float min;
+    float max;
+} range;
 
 static
 void buttonPress() {
@@ -95,6 +101,8 @@ void setupTempSensor() {
     temp = TEMP_LIMIT;
   }
   temp_sum = TEMP_COUNT * TEMP_LIMIT;
+  range.max = DEVICE_DISCONNECTED_C;
+  range.min = TEMP_LIMIT;
 }
 
 void setupButton() {
@@ -149,7 +157,11 @@ void printTempData(const float temp_avg) {
     Serial.print(",");
     Serial.print(temp_data[i], 1);
   }
-  Serial.print("] avg=");
+  Serial.print("] min=");
+  Serial.print(range.min, 1);
+  Serial.print(" max=");
+  Serial.print(range.max, 1);
+  Serial.print(" avg=");
   Serial.print(temp_avg, 1);
   Serial.print("°C");
 }
@@ -193,6 +205,8 @@ void loop() {
   // read temperature and set fan status and speed
   const float temp_read = readTemperature();
   if (temp_read != DEVICE_DISCONNECTED_C) {
+    range.min = min(range.min, temp_read);
+    range.max = max(range.max, temp_read);
     setFan(temp_read);
   }
 
