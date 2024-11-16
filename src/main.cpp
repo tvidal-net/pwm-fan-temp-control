@@ -20,8 +20,8 @@
 #define PWM_FAN_MAX         1.0f
 
 #define TEMP_COUNT          8
-#define TEMP_MIN            24.0f
-#define TEMP_MAX            29.0f
+#define TEMP_MIN            25.0f
+#define TEMP_MAX            30.0f
 #define TEMP_LIMIT          55.0f
 #define TEMP_CALIBRATION    0.90f
 
@@ -97,12 +97,13 @@ void setupTempSensor() {
   temp_sensor.setWaitForConversion(false);
   temp_sensor.setResolution(SENSOR_RESOLUTION);
 
+  const float max = TEMP_MAX + 1.0f;
   for (float& temp : temp_data) {
-    temp = TEMP_LIMIT;
+    temp = max;
   }
-  temp_sum = TEMP_COUNT * TEMP_LIMIT;
-  range.max = DEVICE_DISCONNECTED_C;
-  range.min = TEMP_LIMIT;
+  temp_sum = TEMP_COUNT * max;
+  range.min = max;
+  range.max = TEMP_MIN;
 }
 
 void setupButton() {
