@@ -20,8 +20,8 @@
 #define PWM_FAN_MAX         1.0f
 
 #define TEMP_COUNT          8
-#define TEMP_MIN            25.0f
-#define TEMP_MAX            30.0f
+#define TEMP_MIN            28.0f
+#define TEMP_MAX            38.0f
 #define TEMP_LIMIT          55.0f
 #define TEMP_CALIBRATION    0.90f
 
@@ -215,7 +215,7 @@ void loop() {
     printStatus();
     if (IS_TEMP_READING) {
       tempReadError();
-      setupTempSensor();
+      // setupTempSensor();
     }
     requestTemperature();
     timer.reset();
