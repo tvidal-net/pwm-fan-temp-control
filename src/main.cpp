@@ -16,20 +16,22 @@
 #define TIMER_INTERVAL      2000
 #define BLINK_DELAY         50
 
-#define PWM_FAN_MIN         0.2f
+#define PWM_FAN_MIN         0.1f
 #define PWM_FAN_MAX         1.0f
 
-#define TEMP_COUNT          8
+#define TEMP_COUNT          6
 #define TEMP_MIN            28.0f
-#define TEMP_MAX            38.0f
+#define TEMP_MAX            40.0f
 #define TEMP_LIMIT          55.0f
-#define TEMP_CALIBRATION    0.90f
+#define TEMP_CALIBRATION    1.0f
 
-#define IS_TEMP_READING     digitalRead(LED_BUILTIN)
+#define IS_TEMP_READING     ((bool)digitalRead(LED_BUILTIN))
 #define TEMP_AVG            (temp_sum / TEMP_COUNT)
-#define FAN_READ            digitalRead(FAN_SW)
+#define FAN_READ            ((bool)digitalRead(FAN_SW))
 
 #define SET_FAN_PWM(pwm)    OCR2B = (uint8_t)(FAN_PWM_HIGH*(pwm+0.5f))
+
+const float temp_mid = (TEMP_MAX + TEMP_MIN) / 2.0f;
 
 const char* ON = "ON";
 const char* OFF = "OFF";
@@ -146,7 +148,7 @@ void setFan(const float temp_read) {
   digitalWrite(FAN_SW, button_override || fan_status);
 
   if (FAN_READ) {
-    fan_pwm = constrain((temp_read - TEMP_MIN) / (TEMP_MAX - TEMP_MIN), PWM_FAN_MIN, PWM_FAN_MAX);
+    fan_pwm = constrain((temp_read - temp_mid) / (TEMP_MAX - temp_mid), PWM_FAN_MIN, PWM_FAN_MAX);
     SET_FAN_PWM(fan_pwm);
   }
 }
