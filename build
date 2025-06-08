@@ -1,0 +1,22 @@
+#!/usr/bin/env zsh
+set -o pipefail
+
+array env=(-e nano) port=(-p /dev/ttyUSB0) args=()
+zparseopts -D -E -K - e:=env p:=port || exit $?
+
+unset monitor
+for a
+do
+	case ${(L)a} in
+		upload) args+=( -t upload ) ;;
+		monitor) monitor=true ;;
+	esac
+done
+
+cd pwm-fan-temp-control
+pio run --upload-port ${port[2]} ${=env} ${=args} || exit $?
+
+if [ "${monitor}" ]
+then
+	exec pio device monitor ${=env} ${=port}
+fi

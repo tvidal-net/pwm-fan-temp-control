@@ -1,3 +1,8 @@
+// ***************************************************
+// ** pwm-fan-temp-control/src/main.cpp
+// ***************************************************
+// vim: ts=2 sw=2 et:
+
 #include <Arduino.h>
 #include <avr/wdt.h>
 #include <OneWire.h>
@@ -12,26 +17,23 @@
 
 #define FAN_PWM_HIGH        79
 
-#define SENSOR_RESOLUTION   11
 #define TIMER_INTERVAL      2000
 #define BLINK_DELAY         50
 
-#define PWM_FAN_MIN         0.1f
-#define PWM_FAN_MAX         1.0f
+#define PWM_FAN_MIN         0.01f
+#define PWM_FAN_MAX         1.00f
 
 #define TEMP_COUNT          6
 #define TEMP_MIN            30.0f
-#define TEMP_MAX            42.0f
-#define TEMP_LIMIT          55.0f
-#define TEMP_CALIBRATION    1.0f
+#define TEMP_MAX            40.0f
+#define TEMP_LIMIT          50.0f
+#define TEMP_CALIBRATION    0.88f
 
 #define IS_TEMP_READING     ((bool)digitalRead(LED_BUILTIN))
 #define TEMP_AVG            (temp_sum / TEMP_COUNT)
 #define FAN_READ            ((bool)digitalRead(FAN_SW))
 
 #define SET_FAN_PWM(pwm)    OCR2B = (uint8_t)(FAN_PWM_HIGH*(pwm+0.5f))
-
-const float temp_mid = (TEMP_MAX + TEMP_MIN) / 2.0f;
 
 const char* ON = "ON";
 const char* OFF = "OFF";
@@ -63,7 +65,7 @@ void buttonPress() {
 }
 
 void setupSerial() {
-#ifdef DEBUG
+#ifndef RELEASE
   Serial.begin(9600);
   Serial.println("\n\npwm-fan-temp-control");
 #endif
@@ -91,14 +93,16 @@ void setupWatchdog() {
   wdt_enable(WDTO_4S);
 }
 
+void resetTempSensor() {
+  temp_sensor.begin();
+  temp_sensor.setWaitForConversion(false);
+}
+
 void setupTempSensor() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
-  temp_sensor.begin();
-  temp_sensor.setWaitForConversion(false);
-  temp_sensor.setResolution(SENSOR_RESOLUTION);
-
+  resetTempSensor();
   const float max = TEMP_MAX + 1.0f;
   for (float& temp : temp_data) {
     temp = max;
@@ -125,6 +129,7 @@ void tempReadError(const int times = 3) {
     delay(BLINK_DELAY);
   }
   digitalWrite(LED_BUILTIN, LOW);
+	resetTempSensor();
 }
 
 float readTemperature() {
@@ -148,8 +153,8 @@ void setFan(const float temp_read) {
   digitalWrite(FAN_SW, button_override || fan_status);
 
   if (FAN_READ) {
-    fan_pwm = constrain((temp_read - temp_mid) / (TEMP_MAX - temp_mid), PWM_FAN_MIN, PWM_FAN_MAX);
-    SET_FAN_PWM(fan_pwm);
+    const float fan = (float)(temp_read - TEMP_MIN) / (TEMP_LIMIT - TEMP_MIN);
+    SET_FAN_PWM(fan_pwm = constrain(fan, PWM_FAN_MIN, PWM_FAN_MAX));
   }
 }
 
@@ -185,7 +190,7 @@ void printButtonStatus(const bool button) {
 }
 
 void printStatus() {
-#ifdef DEBUG
+#ifndef RELEASE
   Serial.print("- ");
   printTempData(TEMP_AVG);
   printFanStatus(FAN_READ);
@@ -217,7 +222,7 @@ void loop() {
     printStatus();
     if (IS_TEMP_READING) {
       tempReadError();
-      // setupTempSensor();
+      resetTempSensor();
     }
     requestTemperature();
     timer.reset();
@@ -225,6 +230,4 @@ void loop() {
 
   wdt_reset();
   button.tick();
-
-  delay(20);
 }
