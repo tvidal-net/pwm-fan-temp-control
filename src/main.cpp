@@ -20,8 +20,8 @@
 #define PWM_FAN_MAX         1.0f
 
 #define TEMP_COUNT          6
-#define TEMP_MIN            28.0f
-#define TEMP_MAX            40.0f
+#define TEMP_MIN            30.0f
+#define TEMP_MAX            42.0f
 #define TEMP_LIMIT          55.0f
 #define TEMP_CALIBRATION    1.0f
 
@@ -104,7 +104,7 @@ void setupTempSensor() {
     temp = max;
   }
   temp_sum = TEMP_COUNT * max;
-  range.min = max;
+  range.min = TEMP_MAX;
   range.max = TEMP_MIN;
 }
 
