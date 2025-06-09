@@ -14,7 +14,10 @@ do
 done
 
 cd pwm-fan-temp-control
-pio run --upload-port ${port[2]} ${=env} ${=args} || exit $?
+if [ "${args}" ]
+then
+	pio run --upload-port ${port[2]} ${=env} ${=args} || exit $?
+fi
 
 if [ "${monitor}" ]
 then

@@ -17,8 +17,8 @@
 
 #define FAN_PWM_HIGH        79
 
-#define TIMER_INTERVAL      2000
-#define BLINK_DELAY         50
+#define TIMER_INTERVAL      500
+#define BLINK_DELAY         100
 
 #define PWM_FAN_MIN         0.01f
 #define PWM_FAN_MAX         1.00f
@@ -27,7 +27,8 @@
 #define TEMP_MIN            30.0f
 #define TEMP_MAX            40.0f
 #define TEMP_LIMIT          50.0f
-#define TEMP_CALIBRATION    0.88f
+#define TEMP_CALIBRATION    1.00f
+#define TEMP_RESOLUTION     12
 
 #define IS_TEMP_READING     ((bool)digitalRead(LED_BUILTIN))
 #define TEMP_AVG            (temp_sum / TEMP_COUNT)
@@ -64,6 +65,62 @@ void buttonPress() {
   button_override = !button_override;
 }
 
+void printTempData(const float temp_avg) {
+  Serial.print("temp[");
+  Serial.print(temp_data[0], 1);
+  for (uint8_t i = 1; i < TEMP_COUNT; i++) {
+    Serial.print(",");
+    Serial.print(temp_data[i], 1);
+  }
+  Serial.print("] min=");
+  Serial.print(range.min, 1);
+  Serial.print(" max=");
+  Serial.print(range.max, 1);
+  Serial.print(" avg=");
+  Serial.print(temp_avg, 1);
+  Serial.print("°C");
+}
+
+void printTempReadError(const float temp) {
+#ifndef RELEASE
+  Serial.print("# [");
+  Serial.print(temp, 1);
+  Serial.print("] - ERROR !!!");
+  Serial.println();
+#endif
+}
+
+void printFanStatus(const bool fan) {
+  Serial.print(" fan=");
+  Serial.print(fan ? ON : OFF);
+  if (fan) {
+    Serial.print(" pwm=");
+    Serial.print(fan_pwm * 100, 1);
+    Serial.print("%");
+  }
+}
+
+void printButtonStatus(const bool button) {
+  Serial.print(" btn=");
+  Serial.print(button ? ON : OFF);
+}
+
+void printStatus() {
+#ifndef RELEASE
+  Serial.print("- ");
+  printTempData(TEMP_AVG);
+  printFanStatus(FAN_READ);
+  // printButtonStatus(button_override);
+  Serial.println();
+#endif
+}
+
+void resetTempSensor() {
+  temp_sensor.begin();
+  temp_sensor.setWaitForConversion(false);
+  temp_sensor.setResolution(TEMP_RESOLUTION);
+}
+
 void setupSerial() {
 #ifndef RELEASE
   Serial.begin(9600);
@@ -93,21 +150,15 @@ void setupWatchdog() {
   wdt_enable(WDTO_4S);
 }
 
-void resetTempSensor() {
-  temp_sensor.begin();
-  temp_sensor.setWaitForConversion(false);
-}
-
 void setupTempSensor() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
   resetTempSensor();
-  const float max = TEMP_MAX + 1.0f;
   for (float& temp : temp_data) {
-    temp = max;
+    temp = TEMP_MAX;
   }
-  temp_sum = TEMP_COUNT * max;
+  temp_sum = TEMP_COUNT * TEMP_MAX;
   range.min = TEMP_MAX;
   range.max = TEMP_MIN;
 }
@@ -129,7 +180,6 @@ void tempReadError(const int times = 3) {
     delay(BLINK_DELAY);
   }
   digitalWrite(LED_BUILTIN, LOW);
-	resetTempSensor();
 }
 
 float readTemperature() {
@@ -158,47 +208,6 @@ void setFan(const float temp_read) {
   }
 }
 
-void printTempData(const float temp_avg) {
-  Serial.print("temp[");
-  Serial.print(temp_data[0], 1);
-  for (uint8_t i = 1; i < TEMP_COUNT; i++) {
-    Serial.print(",");
-    Serial.print(temp_data[i], 1);
-  }
-  Serial.print("] min=");
-  Serial.print(range.min, 1);
-  Serial.print(" max=");
-  Serial.print(range.max, 1);
-  Serial.print(" avg=");
-  Serial.print(temp_avg, 1);
-  Serial.print("°C");
-}
-
-void printFanStatus(const bool fan) {
-  Serial.print(" fan=");
-  Serial.print(fan ? ON : OFF);
-  if (fan) {
-    Serial.print(" pwm=");
-    Serial.print(fan_pwm * 100, 1);
-    Serial.print("%");
-  }
-}
-
-void printButtonStatus(const bool button) {
-  Serial.print(" btn=");
-  Serial.print(button ? ON : OFF);
-}
-
-void printStatus() {
-#ifndef RELEASE
-  Serial.print("- ");
-  printTempData(TEMP_AVG);
-  printFanStatus(FAN_READ);
-  // printButtonStatus(button_override);
-  Serial.println();
-#endif
-}
-
 void setup() {
   setupSerial();
   setupButton();
@@ -223,6 +232,7 @@ void loop() {
     if (IS_TEMP_READING) {
       tempReadError();
       resetTempSensor();
+      printTempReadError(temp_read);
     }
     requestTemperature();
     timer.reset();
@@ -230,4 +240,6 @@ void loop() {
 
   wdt_reset();
   button.tick();
+
+  delay(20);
 }
