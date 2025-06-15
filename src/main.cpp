@@ -24,17 +24,17 @@
 #define PWM_FAN_MAX         1.00f
 
 #define TEMP_COUNT          6
-#define TEMP_MIN            30.0f
-#define TEMP_MAX            40.0f
+#define TEMP_OFF            30.0f
+#define TEMP_ON             40.0f
 #define TEMP_LIMIT          50.0f
 #define TEMP_CALIBRATION    1.00f
-#define TEMP_RESOLUTION     11
+#define TEMP_RESOLUTION     12
 
 #define IS_TEMP_READING     ((bool)digitalRead(LED_BUILTIN))
 #define TEMP_AVG            (temp_sum / TEMP_COUNT)
 #define FAN_READ            ((bool)digitalRead(FAN_SW))
 
-#define SET_FAN_PWM(pwm)    OCR2B = (uint8_t)(FAN_PWM_HIGH*(pwm+0.5f))
+#define SET_FAN_PWM(pwm)    OCR2B = (uint8_t)(FAN_PWM_HIGH*(pwm+PWM_FAN_MIN))
 
 const char* ON = "ON";
 const char* OFF = "OFF";
@@ -50,7 +50,7 @@ uint8_t temp_index = 0;
 float temp_sum = 0.0f;
 float temp_data[TEMP_COUNT];
 
-float fan_pwm = 0.01f;
+float fan_pwm = PWM_FAN_MIN;
 
 bool button_override = false;
 
@@ -187,11 +187,11 @@ float readTemperature() {
 }
 
 void setFan(const float temp_read) {
-  const bool fan_status = FAN_READ ? temp_read >= TEMP_MIN : temp_read >= TEMP_MAX;
+  const bool fan_status = FAN_READ ? temp_read >= TEMP_OFF : temp_read >= TEMP_ON;
   digitalWrite(FAN_SW, button_override || fan_status);
 
   if (FAN_READ) {
-    const float fan = (temp_read - TEMP_MIN) / (TEMP_LIMIT - TEMP_MIN);
+    const float fan = (temp_read - TEMP_OFF) / (TEMP_LIMIT - TEMP_OFF);
     fan_pwm = constrain(fan, PWM_FAN_MIN, PWM_FAN_MAX);
     SET_FAN_PWM(fan_pwm);
   }
