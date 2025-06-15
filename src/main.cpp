@@ -13,28 +13,21 @@
 #define FAN_PWM             PIN3
 #define FAN_SW              PIN4
 
-#define FAN_PWM_HIGH        79
-
-#define TIMER_INTERVAL      2000
-#define BLINK_DELAY         50
-
-#define PWM_FAN_MIN         0.01f
-#define PWM_FAN_MAX         1.00f
-
 #define TEMP_COUNT          6
 #define TEMP_OFF            30.0f
 #define TEMP_ON             40.0f
 #define TEMP_LIMIT          60.0f
 #define TEMP_CALIBRATION    1.00f
 
-#define IS_TEMP_READING     ((bool)digitalRead(LED_BUILTIN))
-#define TEMP_AVG            (temp_sum / TEMP_COUNT)
-#define FAN_READ            ((bool)digitalRead(FAN_SW))
+#define TIMER_INTERVAL      2000
+#define BLINK_DELAY         100
+#define BLINK_COUNT         5
 
-#define SET_FAN_PWM(pwm)    OCR2B = (uint8_t)(FAN_PWM_HIGH*(pwm+PWM_FAN_MIN))
+#define PWM_FAN_MIN         0.01f
+#define PWM_FAN_MAX         1.00f
 
-const char* ON = "ON";
-const char* OFF = "OFF";
+#define PWM_HIGH            79
+#define DEVICE_INDEX        0
 
 OneWire one_wire_bus(ONE_WIRE_BUS);
 DallasTemperature temp_sensor(&one_wire_bus);
@@ -58,28 +51,28 @@ void printTempData(const float temp_avg) {
   Serial.print(temp_avg, 1);
 }
 
-void printTempReadError(const float temp) {
-#ifndef RELEASE
-  Serial.print("# [");
-  Serial.print(temp, 1);
-  Serial.print("] - ERROR !!!");
-  Serial.println();
-#endif
-}
-
 void printFanStatus(const bool fan_status) {
   if (fan_status) {
     Serial.print(" fan=");
-    Serial.print(fan_pwm * 100, 1);
+    Serial.print(100.0f * fan_pwm, 1);
     Serial.print("%");
   }
 }
 
-void printStatus() {
+void printStatus(const bool fan_status, const float temp_avg) {
 #ifndef RELEASE
   Serial.print("- ");
-  printTempData(TEMP_AVG);
-  printFanStatus(FAN_READ);
+  printTempData(temp_avg);
+  printFanStatus(fan_status);
+  Serial.println();
+#endif
+}
+
+void printTempReadError(const float temp_read) {
+#ifndef RELEASE
+  Serial.print("# [");
+  Serial.print(temp_read, 1);
+  Serial.print("] - ERROR !!!");
   Serial.println();
 #endif
 }
@@ -100,7 +93,7 @@ void setupTimerPWM() {
   TIMSK2 = TIFR2 = 0;
   TCCR2A = (1 << COM2B1) | (1 << WGM21) | (1 << WGM20);
   TCCR2B = (1 << WGM22) | (1 << CS21);
-  OCR2A = FAN_PWM_HIGH;
+  OCR2A = PWM_HIGH;
   OCR2B = 0;
 }
 
@@ -129,13 +122,19 @@ void setupTempSensor() {
   temp_sum = TEMP_COUNT * TEMP_LIMIT;
 }
 
+inline
+void resetWatchdog() {
+  wdt_reset();
+}
+
 void requestTemperature() {
   digitalWrite(LED_BUILTIN, HIGH);
   temp_sensor.requestTemperatures();
 }
 
-void tempReadError(const int times = 3) {
-  for (int i = 0; i < times; ++i) {
+void tempReadError(const float temp_read) {
+  printTempReadError(temp_read);
+  for (int i = 0; i < BLINK_COUNT; ++i) {
     digitalWrite(LED_BUILTIN, LOW);
     delay(BLINK_DELAY);
     digitalWrite(LED_BUILTIN, HIGH);
@@ -144,9 +143,19 @@ void tempReadError(const int times = 3) {
   digitalWrite(LED_BUILTIN, LOW);
 }
 
+inline
+bool isTempReading() {
+  return digitalRead(LED_BUILTIN);
+}
+
+inline
+float getTempAverage() {
+  return temp_sum / TEMP_COUNT;
+}
+
 float readTemperature() {
-  if (IS_TEMP_READING && temp_sensor.isConversionComplete()) {
-    float temp_read = temp_sensor.getTempCByIndex(0);
+  if (isTempReading() && temp_sensor.isConversionComplete()) {
+    float temp_read = temp_sensor.getTempCByIndex(DEVICE_INDEX);
     if (temp_read != DEVICE_DISCONNECTED_C && temp_read <= TEMP_LIMIT) {
       temp_read *= TEMP_CALIBRATION;
       temp_sum -= temp_data[temp_index];
@@ -154,20 +163,30 @@ float readTemperature() {
       temp_sum += temp_read;
       temp_index = (temp_index + 1) % TEMP_COUNT;
       digitalWrite(LED_BUILTIN, LOW);
-      return TEMP_AVG;
+      return getTempAverage();
     }
   }
   return DEVICE_DISCONNECTED_C;
 }
 
+inline
+bool getFanStatus() {
+  return digitalRead(FAN_SW);
+}
+
+inline
+void setFanPWM(const float temp_read) {
+  const float raw_speed = (temp_read - TEMP_OFF) / (TEMP_LIMIT - TEMP_OFF);
+  fan_pwm = constrain(raw_speed, PWM_FAN_MIN, PWM_FAN_MAX);
+  OCR2B = (uint8_t)(PWM_HIGH * (fan_pwm + PWM_FAN_MIN));
+}
+
 void setFan(const float temp_read) {
-  const bool fan_status = FAN_READ ? (temp_read >= TEMP_OFF) : (temp_read >= TEMP_ON);
+  const bool fan_status = getFanStatus() ? temp_read >= TEMP_OFF : temp_read >= TEMP_ON;
   digitalWrite(FAN_SW, fan_status);
 
   if (fan_status) {
-    const float fan = (temp_read - TEMP_OFF) / (TEMP_LIMIT - TEMP_OFF);
-    fan_pwm = constrain(fan, PWM_FAN_MIN, PWM_FAN_MAX);
-    SET_FAN_PWM(fan_pwm);
+    setFanPWM(temp_read);
   }
 }
 
@@ -177,7 +196,7 @@ void setup() {
   setupTempSensor();
   setupFanControl();
 
-  setFan(TEMP_AVG);
+  setFan(getTempAverage());
 }
 
 void loop() {
@@ -188,18 +207,15 @@ void loop() {
   }
 
   if (timer.isReady()) {
-    if (IS_TEMP_READING) {
-      tempReadError();
+    if (isTempReading()) {
+      tempReadError(temp_read);
       resetTempSensor();
-      printTempReadError(temp_read);
     } else {
-      printStatus();
+      printStatus(getFanStatus(), temp_read);
     }
     requestTemperature();
     timer.reset();
   }
-
-  wdt_reset();
-
+  resetWatchdog();
   delay(20);
 }
