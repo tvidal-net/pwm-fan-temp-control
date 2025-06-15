@@ -24,9 +24,8 @@
 #define TEMP_COUNT          6
 #define TEMP_OFF            30.0f
 #define TEMP_ON             40.0f
-#define TEMP_LIMIT          50.0f
+#define TEMP_LIMIT          60.0f
 #define TEMP_CALIBRATION    1.00f
-#define TEMP_RESOLUTION     12
 
 #define IS_TEMP_READING     ((bool)digitalRead(LED_BUILTIN))
 #define TEMP_AVG            (temp_sum / TEMP_COUNT)
@@ -88,7 +87,6 @@ void printStatus() {
 void resetTempSensor() {
   temp_sensor.begin();
   temp_sensor.setWaitForConversion(false);
-  temp_sensor.setResolution(TEMP_RESOLUTION);
 }
 
 void setupSerial() {
@@ -163,7 +161,7 @@ float readTemperature() {
 }
 
 void setFan(const float temp_read) {
-  const bool fan_status = FAN_READ ? temp_read >= TEMP_OFF : temp_read >= TEMP_ON;
+  const bool fan_status = FAN_READ ? (temp_read >= TEMP_OFF) : (temp_read >= TEMP_ON);
   digitalWrite(FAN_SW, fan_status);
 
   if (fan_status) {
