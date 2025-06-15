@@ -6,14 +6,12 @@
 #include <Arduino.h>
 #include <avr/wdt.h>
 #include <OneWire.h>
-#include <OneButton.h>
 #include <SimpleTimer.h>
 #include <DallasTemperature.h>
 
 #define ONE_WIRE_BUS        PIN2
 #define FAN_PWM             PIN3
 #define FAN_SW              PIN4
-#define BTN_SW              PIN7
 
 #define FAN_PWM_HIGH        79
 
@@ -44,31 +42,21 @@ DallasTemperature temp_sensor(&one_wire_bus);
 
 SimpleTimer timer(TIMER_INTERVAL);
 
-OneButton button(BTN_SW);
-
 uint8_t temp_index = 0;
 float temp_sum = 0.0f;
 float temp_data[TEMP_COUNT];
 
 float fan_pwm = PWM_FAN_MIN;
 
-bool button_override = false;
-
-static
-void buttonPress() {
-  button_override = !button_override;
-}
-
 void printTempData(const float temp_avg) {
-  Serial.print("temp[");
+  Serial.print("[");
   Serial.print(temp_data[0], 1);
   for (uint8_t i = 1; i < TEMP_COUNT; i++) {
     Serial.print(",");
     Serial.print(temp_data[i], 1);
   }
-  Serial.print(" avg=");
+  Serial.print("] avg=");
   Serial.print(temp_avg, 1);
-  Serial.print("°C");
 }
 
 void printTempReadError(const float temp) {
@@ -80,19 +68,12 @@ void printTempReadError(const float temp) {
 #endif
 }
 
-void printFanStatus(const bool fan) {
-  Serial.print(" fan=");
-  Serial.print(fan ? ON : OFF);
-  if (fan) {
-    Serial.print(" pwm=");
+void printFanStatus(const bool fan_status) {
+  if (fan_status) {
+    Serial.print(" fan=");
     Serial.print(fan_pwm * 100, 1);
     Serial.print("%");
   }
-}
-
-void printButtonStatus(const bool button) {
-  Serial.print(" btn=");
-  Serial.print(button ? ON : OFF);
 }
 
 void printStatus() {
@@ -100,7 +81,6 @@ void printStatus() {
   Serial.print("- ");
   printTempData(TEMP_AVG);
   printFanStatus(FAN_READ);
-  // printButtonStatus(button_override);
   Serial.println();
 #endif
 }
@@ -151,10 +131,6 @@ void setupTempSensor() {
   temp_sum = TEMP_COUNT * TEMP_LIMIT;
 }
 
-void setupButton() {
-  button.attachLongPressStart(buttonPress);
-}
-
 void requestTemperature() {
   digitalWrite(LED_BUILTIN, HIGH);
   temp_sensor.requestTemperatures();
@@ -188,9 +164,9 @@ float readTemperature() {
 
 void setFan(const float temp_read) {
   const bool fan_status = FAN_READ ? temp_read >= TEMP_OFF : temp_read >= TEMP_ON;
-  digitalWrite(FAN_SW, button_override || fan_status);
+  digitalWrite(FAN_SW, fan_status);
 
-  if (FAN_READ) {
+  if (fan_status) {
     const float fan = (temp_read - TEMP_OFF) / (TEMP_LIMIT - TEMP_OFF);
     fan_pwm = constrain(fan, PWM_FAN_MIN, PWM_FAN_MAX);
     SET_FAN_PWM(fan_pwm);
@@ -199,7 +175,6 @@ void setFan(const float temp_read) {
 
 void setup() {
   setupSerial();
-  setupButton();
   setupWatchdog();
   setupTempSensor();
   setupFanControl();
@@ -227,7 +202,6 @@ void loop() {
   }
 
   wdt_reset();
-  button.tick();
 
   delay(20);
 }
