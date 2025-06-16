@@ -14,7 +14,11 @@ Fan::Fan(const uint8_t sw_pin, const uint8_t pwm_pin) :
   analogWriteRange(PWM_RANGE);
   analogWriteFreq(PWM_FREQ);
 #endif
+#ifdef RELEASE
+  this->off();
+#else
   this->write(PWM_MAX);
+#endif
 }
 
 bool Fan::read() const {
