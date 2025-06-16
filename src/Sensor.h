@@ -1,18 +1,17 @@
-//
-// Created by thiago on 16/06/25.
-//
-
 #ifndef SENSOR_H
 #define SENSOR_H
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-class Sensor {
+#include "Led.h"
+
+class Sensor final {
   constexpr static float INVALID_TEMP_C = DEVICE_DISCONNECTED_C;
 
-  OneWire oneWire;
-  DallasTemperature sensor;
+  const Led m_Led;
+  OneWire m_OneWire;
+  DallasTemperature m_Sensor;
 
 public:
   explicit Sensor(uint8_t pin);

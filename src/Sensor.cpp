@@ -1,25 +1,20 @@
-//
-// Created by thiago on 16/06/25.
-//
-
 #include "Sensor.h"
 
 #include <Arduino.h>
 
-#define LED                LED_BUILTIN
-
-#define SENSOR_INDEX              0x00
+#define LED LED_BUILTIN
+#define SENSOR_INDEX 0x00
 
 Sensor::Sensor(const uint8_t pin) :
-  oneWire(pin),
-  sensor(&oneWire) {}
+  m_OneWire(pin),
+  m_Sensor(&m_OneWire) {}
 
 float Sensor::getTempC() {
-  digitalWrite(LED, HIGH);
-  sensor.requestTemperatures();
+  m_Led.high();
+  m_Sensor.requestTemperatures();
 
-  const float temp_c = sensor.getTempCByIndex(SENSOR_INDEX);
-  digitalWrite(LED, LOW);
+  const float temp_c = m_Sensor.getTempCByIndex(SENSOR_INDEX);
+  m_Led.low();
   return temp_c;
 }
 
