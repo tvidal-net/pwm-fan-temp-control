@@ -8,8 +8,8 @@
 #define OLED_TEXT_SIZE   0x02
 #define OLED_ROW_SIZE    0x08
 
-#define OLED_TEMP_ROW    0x00
-#define OLED_FAN_ROW     0x01
+#define OLED_FAN_ROW     0x00
+#define OLED_TEMP_ROW    0x01
 
 #define OLED_I2C_ADDRESS 0x3C
 
