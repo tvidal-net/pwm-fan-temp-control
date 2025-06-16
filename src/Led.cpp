@@ -2,7 +2,8 @@
 
 #define BLINK_DELAY 100
 
-Led::Led(const uint8_t pin, const uint8_t pin_mode) : m_Pin(pin) {
+Led::Led(const uint8_t pin, const uint8_t pin_mode) :
+  m_Pin(pin) {
   pinMode(pin, pin_mode);
 }
 

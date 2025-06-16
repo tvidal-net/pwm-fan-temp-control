@@ -11,6 +11,7 @@ public:
   explicit Fan(uint8_t sw_pin, uint8_t pwm_pin);
 
   bool read() const;
+
   void off() const;
 
   void write(float pwm) const;

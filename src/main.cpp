@@ -84,6 +84,7 @@ void println() {
   Serial.println();
 #endif
 }
+
 static
 void display_temp_c(const float temp_c) {
 #ifdef ESP8266

@@ -22,9 +22,11 @@ public:
   bool begin();
 
   void clear();
+
   void show();
 
   void setTempC(float temp_c);
+
   void setFanPWM(float fan_pwm);
 };
 
