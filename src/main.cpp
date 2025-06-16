@@ -4,10 +4,11 @@
 // vim: ts=2 sw=2 et:
 
 #include <Arduino.h>
+#ifdef AVR
 #include <avr/wdt.h>
-#include <OneWire.h>
-#include <SimpleTimer.h>
-#include <DallasTemperature.h>
+#endif
+
+#include "Sensor.h"
 
 #define ONE_WIRE_BUS        PIN2
 #define FAN_PWM             PIN3
@@ -28,11 +29,6 @@
 
 #define PWM_HIGH            79
 #define DEVICE_INDEX        0
-
-OneWire one_wire_bus(ONE_WIRE_BUS);
-DallasTemperature temp_sensor(&one_wire_bus);
-
-SimpleTimer timer(TIMER_INTERVAL);
 
 uint8_t temp_index = 0;
 float temp_sum = 0.0f;
