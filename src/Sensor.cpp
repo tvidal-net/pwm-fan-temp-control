@@ -1,7 +1,5 @@
 #include "Sensor.h"
 
-#include <Arduino.h>
-
 #define LED LED_BUILTIN
 #define SENSOR_INDEX 0x00
 

@@ -1,6 +1,7 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
+#include <Arduino.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
