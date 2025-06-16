@@ -4,214 +4,187 @@
 // vim: ts=2 sw=2 et:
 
 #include <Arduino.h>
-#ifdef AVR
+#ifdef ESP8266
+#include "OledDisplay.h"
+#else
 #include <avr/wdt.h>
 #endif
 
+#include "Fan.h"
+#include "Led.h"
 #include "Sensor.h"
 
-#define ONE_WIRE_BUS        PIN2
-#define FAN_PWM             PIN3
-#define FAN_SW              PIN4
+#define DELAY              2000
 
-#define TEMP_COUNT          6
-#define TEMP_OFF            30.0f
-#define TEMP_ON             40.0f
-#define TEMP_LIMIT          60.0f
-#define TEMP_CALIBRATION    1.00f
+#define TEMP_OFF          30.0f
+#define TEMP_ON           40.0f
+#define TEMP_MAX          60.0f
 
-#define TIMER_INTERVAL      2000
-#define BLINK_DELAY         100
-#define BLINK_COUNT         5
+#ifdef ESP8266
+#define TEMP_SENSOR_PIN      D1
+#define FAN_SW_PIN           D2
+#define FAN_PWM_PIN          D3
+#define SERIAL_BAUD      115200
+#else
+#define TEMP_SENSOR_PIN    PIN2
+#define FAN_SW_PIN         PIN3
+#define FAN_PWM_PIN        PIN4
+#define SERIAL_BAUD        9600
+#endif
 
-#define PWM_FAN_MIN         0.01f
-#define PWM_FAN_MAX         1.00f
+static
+const Led led;
 
-#define PWM_HIGH            79
-#define DEVICE_INDEX        0
+static
+Sensor sensor(TEMP_SENSOR_PIN, &led);
 
-uint8_t temp_index = 0;
-float temp_sum = 0.0f;
-float temp_data[TEMP_COUNT];
+static
+Fan fan(FAN_SW_PIN, FAN_PWM_PIN);
 
-float fan_pwm = PWM_FAN_MIN;
+#ifdef ESP8266
+static
+OledDisplay display;
+#endif
 
-void printTempData(const float temp_avg) {
-  Serial.print("[");
-  Serial.print(temp_data[0], 1);
-  for (uint8_t i = 1; i < TEMP_COUNT; i++) {
-    Serial.print(",");
-    Serial.print(temp_data[i], 1);
-  }
-  Serial.print("] avg=");
-  Serial.print(temp_avg, 1);
-}
-
-void printFanStatus(const bool fan_status) {
-  if (fan_status) {
-    Serial.print(" fan=");
-    Serial.print(100.0f * fan_pwm, 1);
-    Serial.print("%");
-  }
-}
-
-void printStatus(const bool fan_status, const float temp_avg) {
 #ifndef RELEASE
-  Serial.print("- ");
-  printTempData(temp_avg);
-  printFanStatus(fan_status);
-  Serial.println();
+static
+void print_error() {
+  Serial.print("- ERROR: ");
+}
+#endif
+
+static
+void print_temp_c(const float temp_c) {
+#ifndef RELEASE
+  Serial.print(F("temp = "));
+  Serial.print(temp_c, 1);
+  Serial.print(F(" °C"));
 #endif
 }
 
-void printTempReadError(const float temp_read) {
+static
+void print_fan_pwm(const float fan_pwm) {
 #ifndef RELEASE
-  Serial.print("# [");
-  Serial.print(temp_read, 1);
-  Serial.print("] - ERROR !!!");
-  Serial.println();
+  Serial.print(F(", fan = "));
+  Serial.print(100.0f * fan_pwm, 1);
+  Serial.print(F(" %"));
 #endif
 }
 
-void resetTempSensor() {
-  temp_sensor.begin();
-  temp_sensor.setWaitForConversion(false);
+static
+void print_status() {
+#ifndef RELEASE
+  Serial.print(F("- "));
+#endif
 }
 
-void setupSerial() {
+static
+void println() {
 #ifndef RELEASE
-  Serial.begin(9600);
+  Serial.println();
+#endif
+}
+static
+void display_temp_c(const float temp_c) {
+#ifdef ESP8266
+  display.setTempC(temp_c);
+  display.show();
+#endif
+}
+
+static
+void display_fan_pwm(const float fan_pwm) {
+#ifdef ESP8266
+  display.setFanPWM(fan_pwm);
+  display.show();
+#endif
+}
+
+static
+void display_clear() {
+#ifdef ESP8266
+  display.clear();
+  display.show();
+#endif
+}
+
+#ifdef ESP8266
+static
+void setup_display_error() {
+#ifndef RELEASE
+  print_error();
+  Serial.println(F("Failed to initialize display"));
+#endif
+}
+#endif
+
+static
+void temp_read_error(const float temp_c) {
+#ifndef RELEASE
+  print_error();
+  Serial.print(F("read = "));
+  Serial.println(temp_c, 0);
+#endif
+#ifdef ESP8266
+  display_temp_c(temp_c);
+#endif
+  led.blink();
+}
+
+static
+void setup_serial() {
+#ifndef RELEASE
+  Serial.begin(SERIAL_BAUD);
   Serial.println("\n\npwm-fan-temp-control");
 #endif
 }
 
-void setupTimerPWM() {
-  TIMSK2 = TIFR2 = 0;
-  TCCR2A = (1 << COM2B1) | (1 << WGM21) | (1 << WGM20);
-  TCCR2B = (1 << WGM22) | (1 << CS21);
-  OCR2A = PWM_HIGH;
-  OCR2B = 0;
-}
-
-void setupFanControl() {
-  // pwm
-  pinMode(FAN_PWM, OUTPUT);
-  setupTimerPWM();
-
-  // sw
-  pinMode(FAN_SW, OUTPUT);
-  digitalWrite(FAN_SW, LOW);
-}
-
-void setupWatchdog() {
-  wdt_enable(WDTO_4S);
-}
-
-void setupTempSensor() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-
-  resetTempSensor();
-  for (float& temp : temp_data) {
-    temp = TEMP_LIMIT;
-  }
-  temp_sum = TEMP_COUNT * TEMP_LIMIT;
-}
-
-inline
-void resetWatchdog() {
-  wdt_reset();
-}
-
-void requestTemperature() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  temp_sensor.requestTemperatures();
-}
-
-void tempReadError(const float temp_read) {
-  printTempReadError(temp_read);
-  for (int i = 0; i < BLINK_COUNT; ++i) {
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(BLINK_DELAY);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(BLINK_DELAY);
-  }
-  digitalWrite(LED_BUILTIN, LOW);
-}
-
-inline
-bool isTempReading() {
-  return digitalRead(LED_BUILTIN);
-}
-
-inline
-float getTempAverage() {
-  return temp_sum / TEMP_COUNT;
-}
-
-float readTemperature() {
-  if (isTempReading() && temp_sensor.isConversionComplete()) {
-    float temp_read = temp_sensor.getTempCByIndex(DEVICE_INDEX);
-    if (temp_read != DEVICE_DISCONNECTED_C && temp_read <= TEMP_LIMIT) {
-      temp_read *= TEMP_CALIBRATION;
-      temp_sum -= temp_data[temp_index];
-      temp_data[temp_index] = temp_read;
-      temp_sum += temp_read;
-      temp_index = (temp_index + 1) % TEMP_COUNT;
-      digitalWrite(LED_BUILTIN, LOW);
-      return getTempAverage();
+static
+void setup_display() {
+#ifdef ESP8266
+  if (!display.begin()) {
+    setup_display_error();
+    for (;;) {
+      led.blink();
     }
   }
-  return DEVICE_DISCONNECTED_C;
+#endif
 }
 
-inline
-bool getFanStatus() {
-  return digitalRead(FAN_SW);
+static
+void off() {
+  fan.off();
+  display_clear();
 }
 
-inline
-void setFanPWM(const float temp_read) {
-  const float raw_speed = (temp_read - TEMP_OFF) / (TEMP_LIMIT - TEMP_OFF);
-  fan_pwm = constrain(raw_speed, PWM_FAN_MIN, PWM_FAN_MAX);
-  OCR2B = (uint8_t)(PWM_HIGH * (fan_pwm + PWM_FAN_MIN));
-}
+static
+void set_fan_pwm(const float temp_c) {
+  const float fan_pwm = (temp_c - TEMP_OFF) / (TEMP_MAX - TEMP_OFF);
+  fan.write(fan_pwm);
 
-void setFan(const float temp_read) {
-  const bool fan_status = getFanStatus() ? temp_read >= TEMP_OFF : temp_read >= TEMP_ON;
-  digitalWrite(FAN_SW, fan_status);
-
-  if (fan_status) {
-    setFanPWM(temp_read);
-  }
+  display_fan_pwm(fan_pwm);
+  print_fan_pwm(fan_pwm);
 }
 
 void setup() {
-  setupSerial();
-  setupWatchdog();
-  setupTempSensor();
-  setupFanControl();
-
-  setFan(getTempAverage());
+  setup_serial();
+  setup_display();
 }
 
 void loop() {
-  // read temperature and set fan status and speed
-  const float temp_read = readTemperature();
-  if (temp_read != DEVICE_DISCONNECTED_C) {
-    setFan(temp_read);
-  }
-
-  if (timer.isReady()) {
-    if (isTempReading()) {
-      tempReadError(temp_read);
-      resetTempSensor();
-    } else {
-      printStatus(getFanStatus(), temp_read);
+  const float temp_c = sensor.getTempC();
+  if (Sensor::isValid(temp_c) && temp_c < TEMP_MAX) {
+    print_status();
+    print_temp_c(temp_c);
+    if (temp_c < TEMP_OFF) {
+      off();
+    } else if (temp_c > TEMP_ON || fan.read()) {
+      display_temp_c(temp_c);
+      set_fan_pwm(temp_c);
     }
-    requestTemperature();
-    timer.reset();
+    println();
+  } else {
+    temp_read_error(temp_c);
   }
-  resetWatchdog();
-  delay(20);
+  delay(DELAY);
 }

@@ -13,7 +13,7 @@ public:
   bool read() const;
   void off() const;
 
-  void write(float value) const;
+  void write(float pwm) const;
 };
 
 #endif //FAN_H

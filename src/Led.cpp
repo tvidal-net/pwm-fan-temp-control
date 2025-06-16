@@ -2,8 +2,8 @@
 
 #define BLINK_DELAY 100
 
-Led::Led(const uint8_t pin, const uint8_t pinMode) : m_Pin(pin) {
-  pinMode(pin, pinMode);
+Led::Led(const uint8_t pin, const uint8_t pin_mode) : m_Pin(pin) {
+  pinMode(pin, pin_mode);
 }
 
 bool Led::read() const {
@@ -20,9 +20,9 @@ void Led::low() const {
 
 void Led::blink(const uint8_t times) const {
   for (uint8_t i = 0; i < times; ++i) {
-    high();
+    this->high();
     delay(BLINK_DELAY);
-    low();
+    this->low();
     delay(BLINK_DELAY);
   }
 }

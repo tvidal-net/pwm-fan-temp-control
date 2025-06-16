@@ -1,11 +1,15 @@
 #include "Sensor.h"
 
-#define LED LED_BUILTIN
-#define SENSOR_INDEX 0x00
+#define SENSOR_INDEX   0x00
 
-Sensor::Sensor(const uint8_t pin) :
+#define INVALID_TEMP_C DEVICE_DISCONNECTED_C;
+
+Sensor::Sensor(const uint8_t pin, const Led* led) :
+  m_Led(*led),
   m_OneWire(pin),
-  m_Sensor(&m_OneWire) {}
+  m_Sensor(&m_OneWire) {
+  m_Sensor.begin();
+}
 
 float Sensor::getTempC() {
   m_Led.high();
