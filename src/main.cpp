@@ -14,7 +14,7 @@
 #include "Led.h"
 #include "Sensor.h"
 
-#define DELAY              2000
+#define DELAY             0x800
 
 #define TEMP_OFF          30.0f
 #define TEMP_ON           40.0f

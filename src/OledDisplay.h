@@ -9,6 +9,8 @@
 #define OLED_SCL_PIN D6
 
 class OledDisplay final {
+  uint8_t m_ChartIndex = 0;
+  uint8_t* m_Chart;
   TwoWire m_TwoWire;
   Adafruit_SSD1306 m_Display;
 
@@ -16,8 +18,16 @@ class OledDisplay final {
 
   void printValue(float value, char label, char unit);
 
+  void drawChart();
+
+  void setChart(float temp_c);
+
+  void resetChart() const;
+
 public:
   explicit OledDisplay(uint8_t sda = OLED_SDA_PIN, uint8_t scl = OLED_SCL_PIN);
+
+  ~OledDisplay();
 
   bool begin();
 

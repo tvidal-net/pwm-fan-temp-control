@@ -15,11 +15,11 @@
 
 #define BUFFER_SIZE      0x80
 
-constexpr int16_t row_size = OLED_ROW_SIZE * OLED_TEXT_SIZE;
+constexpr int16_t row_height = OLED_ROW_SIZE * OLED_TEXT_SIZE;
 
 void OledDisplay::clearRow(const int16_t row) {
-  const int16_t y = row * row_size;
-  m_Display.fillRect(0, y, OLED_WIDTH, row_size, BLACK);
+  const int16_t y = row * row_height;
+  m_Display.fillRect(0, y, OLED_WIDTH, row_height, BLACK);
   m_Display.setCursor(0, y);
 }
 
@@ -42,9 +42,37 @@ void OledDisplay::printValue(const float value, const char label, const char uni
   }
 }
 
+void OledDisplay::drawChart() {
+  constexpr int16_t chart_height = 2 * row_height;
+  m_Display.fillRect(0, chart_height, OLED_WIDTH, chart_height, BLACK);
+  for (int16_t x = 0; x < OLED_WIDTH; ++x) {
+    const uint8_t i = (x + m_ChartIndex) % OLED_WIDTH;
+    const int16_t y = m_Chart[i];
+    m_Display.drawPixel(x, y, WHITE);
+  }
+}
+
+void OledDisplay::setChart(const float temp_c) {
+  m_Chart[m_ChartIndex] = OLED_HEIGHT + 0x10 - temp_c;
+  m_ChartIndex = (m_ChartIndex + 1) % OLED_WIDTH;
+  this->drawChart();
+}
+
+void OledDisplay::resetChart() const {
+  for (uint8_t i = 0; i < OLED_WIDTH; ++i) {
+    m_Chart[i] = OLED_HEIGHT;
+  }
+}
+
 OledDisplay::OledDisplay(const uint8_t sda, const uint8_t scl) :
   m_Display(OLED_WIDTH, OLED_HEIGHT, &m_TwoWire, OLED_RESET) {
   m_TwoWire.begin(sda, scl);
+  m_Chart = new uint8_t[OLED_WIDTH];
+  this->resetChart();
+}
+
+OledDisplay::~OledDisplay() {
+  delete[] m_Chart;
 }
 
 bool OledDisplay::begin() {
@@ -70,6 +98,7 @@ void OledDisplay::show() {
 
 void OledDisplay::setTempC(const float temp_c) {
   clearRow(OLED_TEMP_ROW);
+  setChart(temp_c);
   printValue(temp_c, 'T', 'C');
 }
 

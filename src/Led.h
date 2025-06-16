@@ -11,9 +11,9 @@ public:
 
   bool read() const;
 
-  void high() const;
+  void off() const;
 
-  void low() const;
+  void on() const;
 
   void blink(uint8_t times = 5) const;
 };

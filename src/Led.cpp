@@ -11,19 +11,20 @@ bool Led::read() const {
   return digitalRead(m_Pin);
 }
 
-void Led::high() const {
+void Led::off() const {
   digitalWrite(m_Pin, HIGH);
 }
 
-void Led::low() const {
+void Led::on() const {
   digitalWrite(m_Pin, LOW);
 }
 
 void Led::blink(const uint8_t times) const {
   for (uint8_t i = 0; i < times; ++i) {
-    this->high();
+    this->off();
     delay(BLINK_DELAY);
-    this->low();
+    this->on();
     delay(BLINK_DELAY);
   }
+  this->off();
 }

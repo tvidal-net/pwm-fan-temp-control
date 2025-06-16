@@ -12,11 +12,11 @@ Sensor::Sensor(const uint8_t pin, const Led* led) :
 }
 
 float Sensor::getTempC() {
-  m_Led.high();
+  m_Led.on();
   m_Sensor.requestTemperatures();
 
   const float temp_c = m_Sensor.getTempCByIndex(SENSOR_INDEX);
-  m_Led.low();
+  m_Led.off();
   return temp_c;
 }
 
