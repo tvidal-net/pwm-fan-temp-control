@@ -21,9 +21,9 @@
 #define TEMP_MAX          60.0f
 
 #ifdef ESP8266
-#define TEMP_SENSOR_PIN      D1
-#define FAN_SW_PIN           D2
+#define TEMP_SENSOR_PIN      D2
 #define FAN_PWM_PIN          D3
+#define FAN_SW_PIN           D6
 #define SERIAL_BAUD      115200
 #else
 #define TEMP_SENSOR_PIN    PIN2
