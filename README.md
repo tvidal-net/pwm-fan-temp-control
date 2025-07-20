@@ -1,6 +1,7 @@
 # pwm-fan-temp-control
 
-Arduino pwm-fan based temperature control, using one-wire DS18B20 temperature sensor.
+Arduino pwm-fan based temperature control, using one-wire DS18B20
+temperature sensor.
 
 ## Source Code
 
@@ -13,21 +14,25 @@ Arduino pwm-fan based temperature control, using one-wire DS18B20 temperature se
 ## Usage
 
 compile / build
+
 ```shell script
 PLATFORMIO_BUILD_FLAGS='-DDEBUG' platformio run -e 'nano'
 ```
 
 upload with DEBUG enabled
+
 ```shell script
 PLATFORMIO_BUILD_FLAGS='-DDEBUG' platformio run -e 'nano' --target='upload'
 ```
 
 upload final version
+
 ```shell script
 platformio run -e 'nano' --target='upload'
 ```
 
 monitor serial port
+
 ```shell script
 platformio device monitor -e 'nano'
 ```

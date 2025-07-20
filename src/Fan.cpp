@@ -10,27 +10,21 @@ Fan::Fan(const uint8_t sw_pin, const uint8_t pwm_pin) :
   m_PWM(pwm_pin) {
   pinMode(m_SW, OUTPUT);
   pinMode(m_PWM, OUTPUT);
-#ifdef ESP8266
   analogWriteRange(PWM_RANGE);
   analogWriteFreq(PWM_FREQ);
-#endif
-#ifdef RELEASE
-  this->off();
-#else
   this->write(PWM_MAX);
-#endif
 }
 
 bool Fan::read() const {
-  return digitalRead(m_SW);
+  return !digitalRead(m_SW);
 }
 
 void Fan::off() const {
-  digitalWrite(m_SW, LOW);
+  digitalWrite(m_SW, HIGH);
 }
 
 void Fan::write(const float pwm) const {
-  digitalWrite(m_SW, HIGH);
+  digitalWrite(m_SW, LOW);
 
   const uint16_t duty = constrain(
     pwm * PWM_RANGE,

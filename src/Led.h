@@ -7,7 +7,7 @@ class Led final {
   const uint8_t m_Pin;
 
 public:
-  explicit Led(uint8_t pin = LED_BUILTIN, uint8_t pin_mode = OUTPUT);
+  explicit Led(uint8_t pin = LED_BUILTIN);
 
   bool read() const;
 

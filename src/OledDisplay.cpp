@@ -1,5 +1,6 @@
 #ifdef ESP8266
 #include "OledDisplay.h"
+#include "Sensor.h"
 
 #define OLED_WIDTH       0x80
 #define OLED_HEIGHT      0x40
@@ -32,7 +33,7 @@ void OledDisplay::printValue(const float value, const char label, const char uni
   if (value < 10.0f) {
     m_Display.write(' ');
   }
-  if (value > -100.0f) {
+  if (Sensor::isValid(value)) {
     m_Display.write(' ');
     m_Display.print(value, 1);
     m_Display.write(' ');
@@ -40,6 +41,11 @@ void OledDisplay::printValue(const float value, const char label, const char uni
   } else {
     m_Display.print(value, 0);
   }
+}
+
+void OledDisplay::printText(const uint8_t row, const __FlashStringHelper* text) {
+  clearRow(row);
+  m_Display.print(text);
 }
 
 void OledDisplay::drawChart() {
@@ -98,12 +104,16 @@ void OledDisplay::show() {
 
 void OledDisplay::setTempC(const float temp_c) {
   clearRow(OLED_TEMP_ROW);
-  setChart(temp_c);
-  printValue(temp_c, 'T', 'C');
+  if (Sensor::isValid(temp_c)) {
+    setChart(temp_c);
+    printValue(temp_c, 'T', 'C');
+  } else {
+    printText(OLED_TEMP_ROW, F("TEMP ERROR"));
+  }
 }
 
 void OledDisplay::setFanPWM(const float fan_pwm) {
   clearRow(OLED_FAN_ROW);
-  printValue(100 * fan_pwm, 'F', '%');
+  printValue(100.0f * fan_pwm, 'F', '%');
 }
 #endif
