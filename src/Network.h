@@ -14,7 +14,7 @@ class Network {
 
   void clientConnected(AsyncClient& client);
   void clientReceived(AsyncClient& client, const std::string& data);
-  void clientDisconnected(AsyncClient& client);
+  void clientDisconnected(const AsyncClient& client);
 
 public:
   explicit Network();

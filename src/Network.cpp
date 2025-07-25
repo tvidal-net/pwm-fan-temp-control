@@ -24,7 +24,7 @@ void print_client(AsyncClient& client) {
 }
 
 void Network::clientConnected(AsyncClient& client) {
-  const AcConnectHandler onDisconnect = [this](void*, AsyncClient* it) {
+  const AcConnectHandler onDisconnect = [this](void*, const AsyncClient* it) {
     clientDisconnected(*it);
   };
   client.onDisconnect(onDisconnect, this);
@@ -42,13 +42,15 @@ void Network::clientConnected(AsyncClient& client) {
 void Network::clientReceived(AsyncClient& client, const std::string& data) {
   const char last = data[data.length() - 1];
   const auto cmd = last != '\n' ? data : data.substr(0, data.length() - 1);
+  print_client(client);
+  Serial.print(" command: ");
+  Serial.println(cmd.c_str());
+
   m_Commands.insert(m_Commands.begin(), cmd);
-  client.write("OK");
+  client.write("OK\n");
 }
 
-void Network::clientDisconnected(AsyncClient& client) {
-  print_client(client);
-  Serial.println(" disconnected");
+void Network::clientDisconnected(const AsyncClient& client) {
   for (auto it = m_Clients.begin(); it != m_Clients.end(); ++it) {
     if (&client == *it) {
       m_Clients.erase(it);
