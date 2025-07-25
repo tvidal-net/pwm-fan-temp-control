@@ -24,7 +24,7 @@
 #define TEMP_ON                40.0f
 #define TEMP_MAX               60.0f
 
-#define OFF_TIME     60u * 60 * 1000
+#define OFF_TIME          60u * 1000
 
 #define TEMP_SENSOR_PIN           D2
 #define FAN_PWM_PIN               D4
@@ -44,6 +44,9 @@ OledDisplay display;
 
 static
 Network network;
+
+static
+float override_fan_pwm = PWM_OFF;
 
 static
 void print_error() {
@@ -75,27 +78,19 @@ void println() {
 }
 
 static
-void display_temp_c(const float temp_c) {
-  display.setTempC(temp_c);
-  display.show();
-}
-
-static
-void display_fan_pwm(const float fan_pwm) {
-  display.setFanPWM(fan_pwm);
-  display.show();
-}
-
-static
 void display_clear() {
   display.clear();
   display.show();
 }
 
+[[noreturn]]
 static
 void setup_display_error() {
   print_error();
   Serial.println(F("Failed to initialize display"));
+  for (;;) {
+    led.blink();
+  }
 }
 
 static
@@ -103,7 +98,11 @@ void temp_read_error(const float temp_c) {
   print_error();
   Serial.print(F("read = "));
   Serial.println(temp_c, 0);
-  display_temp_c(temp_c);
+
+  display.setTempC(temp_c);
+  display.show();
+
+  network.send(temp_c);
   led.blink();
 }
 
@@ -117,9 +116,6 @@ static
 void setup_display() {
   if (!display.begin()) {
     setup_display_error();
-    for (;;) {
-      led.blink();
-    }
   }
 }
 
@@ -130,17 +126,56 @@ void setup_network() {
 
 static
 void off() {
+  override_fan_pwm = PWM_OFF;
   fan.off();
   display_clear();
 }
 
 static
-void set_fan_pwm(const float temp_c) {
-  const float fan_pwm = (temp_c - TEMP_OFF) / (TEMP_MAX - TEMP_OFF);
-  fan.write(fan_pwm);
+float calc_fan_pwm(const float temp_c) {
+  const float pwm = override_fan_pwm
+                      ? override_fan_pwm
+                      : (temp_c - TEMP_OFF) / (TEMP_MAX - TEMP_OFF);
 
-  display_fan_pwm(fan_pwm);
+  return pwm <= PWM_OFF ? PWM_MIN : pwm;
+}
+
+static
+void check_override_command() {
+  const auto cmd = network.pop();
+  if (!cmd.empty() && cmd[0] == 'F' && cmd.length() > 1) {
+    const uint8_t value = cmd[1] - '0';
+    override_fan_pwm = 0.11112f * value;
+
+    if (override_fan_pwm && !fan.read()) {
+      fan.write(override_fan_pwm);
+    }
+  }
+}
+
+static
+void check_fan_off() {
+  static unsigned long off_time = 0;
+  if (off_time) {
+    const auto now = millis();
+    const auto elapsed = now - off_time;
+    if (elapsed > OFF_TIME) {
+      off_time = 0;
+      off();
+    }
+  } else if (fan.read()) {
+    off_time = millis();
+  }
+}
+
+static
+void keep_fan_on(const float temp_c) {
+  const float fan_pwm = calc_fan_pwm(temp_c);
+  fan.write(fan_pwm);
   print_fan_pwm(fan_pwm);
+  display.setFanPWM(fan_pwm);
+  display.setTempC(temp_c);
+  display.show();
   network.send(temp_c, fan_pwm);
 }
 
@@ -151,46 +186,22 @@ void setup() {
 }
 
 void loop() {
-  static uint32_t off_time = 0;
+  check_override_command();
   const auto temp_c = sensor.getTempC();
   if (Sensor::isValid(temp_c) && temp_c < TEMP_MAX) {
     print_status();
     print_temp_c(temp_c);
-    if (temp_c > TEMP_ON || fan.read()) {
-      set_fan_pwm(temp_c);
-      display_temp_c(temp_c);
-    }
     if (temp_c < TEMP_OFF) {
-      if (off_time) {
-        const auto now = millis();
-        const auto elapsed = now - off_time;
-        if (elapsed > OFF_TIME) {
-          off_time = 0;
-          off();
-        }
-      } else if (fan.read()) {
-        off_time = millis();
-      }
+      check_fan_off();
+    }
+    if (temp_c >= TEMP_ON || fan.read()) {
+      keep_fan_on(temp_c);
+    } else {
+      display_clear();
     }
     println();
   } else {
     temp_read_error(temp_c);
-    network.send(temp_c);
-  }
-  const auto cmd = network.pop();
-  if (!cmd.empty()) {
-    Serial.print("received command = ");
-    Serial.println(cmd.c_str());
-    const char ch = cmd[0];
-    const uint8_t value = cmd[1] - '0';
-    if (ch == 'F') {
-      if (value > 0) {
-        fan.write(10.0f * value);
-        display_fan_pwm(value / 10.0f);
-      } else {
-        off();
-      }
-    }
   }
   delay(DELAY);
 }

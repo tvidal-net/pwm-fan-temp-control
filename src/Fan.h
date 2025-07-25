@@ -3,6 +3,9 @@
 
 #include <Arduino.h>
 
+#define PWM_OFF                   0.00f
+#define PWM_MIN                   0.01f
+
 class Fan final {
   uint8_t m_SW;
   uint8_t m_PWM;

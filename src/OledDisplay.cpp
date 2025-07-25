@@ -114,6 +114,8 @@ void OledDisplay::setTempC(const float temp_c) {
 
 void OledDisplay::setFanPWM(const float fan_pwm) {
   clearRow(OLED_FAN_ROW);
-  printValue(100.0f * fan_pwm, 'F', '%');
+  if (fan_pwm) {
+    printValue(100.0f * fan_pwm, 'F', '%');
+  }
 }
 #endif

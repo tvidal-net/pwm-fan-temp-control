@@ -1,25 +1,37 @@
 #include "Sensor.h"
 
-#define SENSOR_INDEX   0x00
+#define RETRY_COUNT                          0x05
+#define SENSOR_INDEX                         0x00
 
-#define INVALID_TEMP_C DEVICE_DISCONNECTED_C;
+void Sensor::getSensorAddress() {
+  uint8_t retries = RETRY_COUNT;
+  while (retries-- && !m_SensorAddress && !m_Sensor.getAddress(&m_SensorAddress, SENSOR_INDEX)) {
+    m_Sensor.setWaitForConversion(true);
+    m_Sensor.begin();
+    delay(50);
+  }
+}
 
 Sensor::Sensor(const uint8_t pin, const Led* led) :
   m_Led(*led),
   m_OneWire(pin),
-  m_Sensor(&m_OneWire) {
-  m_Sensor.begin();
-}
+  m_Sensor(&m_OneWire) {}
 
 float Sensor::getTempC() {
   m_Led.on();
-  m_Sensor.requestTemperatures();
 
-  const float temp_c = m_Sensor.getTempCByIndex(SENSOR_INDEX);
-  m_Led.off();
-  return temp_c;
+  this->getSensorAddress();
+  if (m_SensorAddress) {
+    const auto [ok, _] = m_Sensor.requestTemperaturesByAddress(&m_SensorAddress);
+    if (ok) {
+      const float temp_c = m_Sensor.getTempC(&m_SensorAddress, RETRY_COUNT);
+      m_Led.off();
+      return temp_c;
+    }
+  }
+  return DEVICE_DISCONNECTED_C;
 }
 
 bool Sensor::isValid(const float temp_c) {
-  return temp_c > INVALID_TEMP_C;
+  return temp_c > DEVICE_DISCONNECTED_C;
 }
