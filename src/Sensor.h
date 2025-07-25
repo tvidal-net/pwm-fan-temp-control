@@ -5,10 +5,7 @@
 #include <DallasTemperature.h>
 #include <OneWire.h>
 
-#include "Led.h"
-
 class Sensor final {
-  const Led& m_Led;
   OneWire m_OneWire;
   DallasTemperature m_Sensor;
   uint8_t m_SensorAddress;
@@ -16,7 +13,7 @@ class Sensor final {
   void getSensorAddress();
 
 public:
-  explicit Sensor(uint8_t pin, const Led* led);
+  explicit Sensor(uint8_t pin);
 
   float getTempC();
 

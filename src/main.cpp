@@ -11,7 +11,6 @@
 #include "OledDisplay.h"
 
 #include "Fan.h"
-#include "Led.h"
 #include "Sensor.h"
 
 #ifndef SERIAL_BAUD
@@ -31,10 +30,7 @@
 #define FAN_SW_PIN                D7
 
 static
-const Led led;
-
-static
-Sensor sensor(TEMP_SENSOR_PIN, &led);
+Sensor sensor(TEMP_SENSOR_PIN);
 
 static
 Fan fan(FAN_SW_PIN, FAN_PWM_PIN);
@@ -88,9 +84,7 @@ static
 void setup_display_error() {
   print_error();
   Serial.println(F("Failed to initialize display"));
-  for (;;) {
-    led.blink();
-  }
+  for (;;) {}
 }
 
 static
@@ -103,7 +97,6 @@ void temp_read_error(const float temp_c) {
   display.show();
 
   network.send(temp_c);
-  led.blink();
 }
 
 static
