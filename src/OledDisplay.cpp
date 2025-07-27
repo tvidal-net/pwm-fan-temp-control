@@ -16,7 +16,8 @@
 
 #define BUFFER_SIZE      0x80
 
-constexpr int16_t row_height = OLED_ROW_SIZE * OLED_TEXT_SIZE;
+static constexpr
+int16_t row_height = OLED_ROW_SIZE * OLED_TEXT_SIZE;
 
 void OledDisplay::clearRow(const int16_t row) {
   const int16_t y = row * row_height;
@@ -43,8 +44,8 @@ void OledDisplay::printValue(const float value, const char label, const char uni
   }
 }
 
-void OledDisplay::printText(const uint8_t row, const __FlashStringHelper* text) {
-  clearRow(row);
+void OledDisplay::printText(const __FlashStringHelper* text) {
+  clearRow(OLED_TEMP_ROW);
   m_Display.print(text);
 }
 
@@ -61,7 +62,7 @@ void OledDisplay::drawChart() {
 void OledDisplay::setChart(const float temp_c) {
   m_Chart[m_ChartIndex] = OLED_HEIGHT + 0x10 - temp_c;
   m_ChartIndex = (m_ChartIndex + 1) % OLED_WIDTH;
-  this->drawChart();
+  drawChart();
 }
 
 void OledDisplay::resetChart() const {
@@ -74,7 +75,7 @@ OledDisplay::OledDisplay(const uint8_t sda, const uint8_t scl) :
   m_Display(OLED_WIDTH, OLED_HEIGHT, &m_TwoWire, OLED_RESET) {
   m_TwoWire.begin(sda, scl);
   m_Chart = new uint8_t[OLED_WIDTH];
-  this->resetChart();
+  resetChart();
 }
 
 OledDisplay::~OledDisplay() {
@@ -108,7 +109,7 @@ void OledDisplay::setTempC(const float temp_c) {
     setChart(temp_c);
     printValue(temp_c, 'T', 'C');
   } else {
-    printText(OLED_TEMP_ROW, F("TEMP ERROR"));
+    printText(F("TEMP ERROR"));
   }
 }
 

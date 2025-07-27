@@ -1,7 +1,7 @@
 // ***************************************************
 // ** pwm-fan-temp-control/src/main.cpp
 // ***************************************************
-// vim: ts=2 sw=2 et:
+// vim:ts=2:sw=2:et:
 
 #include <Arduino.h>
 #include <string>
@@ -22,85 +22,52 @@
 #define TEMP_ON                40.0f
 #define TEMP_MAX               60.0f
 
-#define OFF_TIME          60u * 1000
+#define OFF_TIME               60000
 
 #define TEMP_SENSOR_PIN           D2
 #define FAN_PWM_PIN               D1
 #define FAN_SW_PIN                D7
 
+static
 float override_fan_pwm = PWM_OFF;
 
 static
-Network network;
+Network* network;
 
 static
-OledDisplay display;
-
-static const
-Fan fan(FAN_SW_PIN, FAN_PWM_PIN);
+OledDisplay* display;
 
 static
-Sensor sensor(TEMP_SENSOR_PIN);
-
-static const
-Led led(LED_BUILTIN);
+Fan* fan;
 
 static
-void print_error() {
-  Serial.print("- ERROR: ");
-}
+Sensor* sensor;
 
 static
-void print_temp_c(const float temp_c) {
-  Serial.print(F("temp = "));
-  Serial.print(temp_c, 1);
-  Serial.print(F(" °C"));
-}
-
-static
-void print_fan_pwm(const float fan_pwm) {
-  Serial.print(F(", fan = "));
-  Serial.print(100.0f * fan_pwm, 1);
-  Serial.print(F(" %"));
-}
-
-static
-void print_status() {
-  Serial.print(F("- "));
-}
-
-static
-void println() {
-  Serial.println();
-}
+Led* led;
 
 static
 void display_clear() {
-  display.clear();
-  display.show();
+  display->clear();
+  display->show();
 }
 
 [[noreturn]]
 static
 void setup_display_error() {
-  print_error();
-  Serial.println(F("Failed to initialize display"));
+  Serial.println(F("DISPLAY:failed"));
   for (;;) {
-    led.blink();
+    led->blink();
   }
 }
 
 static
 void temp_read_error(const float temp_c) {
-  print_error();
-  Serial.print(F("read = "));
-  Serial.println(temp_c, 0);
+  display->setTempC(temp_c);
+  display->show();
 
-  display.setTempC(temp_c);
-  display.show();
-
-  network.send(temp_c);
-  led.blink();
+  network->send(temp_c);
+  led->blink();
 }
 
 static
@@ -111,20 +78,20 @@ void setup_serial() {
 
 static
 void setup_display() {
-  if (!display.begin()) {
+  if (!display->begin()) {
     setup_display_error();
   }
 }
 
 static
 void setup_network() {
-  network.startServer();
+  network->startServer();
 }
 
 static
 void off() {
   override_fan_pwm = PWM_OFF;
-  fan.off();
+  fan->off();
   display_clear();
 }
 
@@ -139,13 +106,13 @@ float calc_fan_pwm(const float temp_c) {
 
 static
 void check_override_command() {
-  const auto cmd = network.pop();
+  const auto cmd = network->pop();
   if (!cmd.empty() && cmd[0] == 'F' && cmd.length() > 1) {
     const uint8_t value = cmd[1] - '0';
     override_fan_pwm = 0.11112f * value;
 
-    if (override_fan_pwm && !fan.read()) {
-      fan.write(override_fan_pwm);
+    if (override_fan_pwm && !fan->read()) {
+      fan->write(override_fan_pwm);
     }
   }
 }
@@ -160,7 +127,8 @@ void check_fan_off() {
       off_time = 0;
       off();
     }
-  } else if (fan.read()) {
+    Serial.printf("OFF:%lus\n", (OFF_TIME - elapsed) / 1000);
+  } else if (fan->read()) {
     off_time = millis();
   }
 }
@@ -168,46 +136,48 @@ void check_fan_off() {
 static
 void keep_fan_on(const float temp_c) {
   const float fan_pwm = calc_fan_pwm(temp_c);
-  fan.write(fan_pwm);
-  print_fan_pwm(fan_pwm);
-  display.setFanPWM(fan_pwm);
-  display.setTempC(temp_c);
-  display.show();
-  network.send(temp_c, fan_pwm);
+  fan->write(fan_pwm);
+  display->setFanPWM(fan_pwm);
+  display->setTempC(temp_c);
+  display->show();
+  network->send(temp_c, fan_pwm);
 }
 
 void setup() {
   setup_serial();
+  led = new Led(LED_BUILTIN);
+  sensor = new Sensor(TEMP_SENSOR_PIN);
+  fan = new Fan(FAN_SW_PIN, FAN_PWM_PIN);
+
+  display = new OledDisplay();
   setup_display();
+
+  network = new Network();
   setup_network();
 }
 
 void loop() {
-  if (!network.connected()) {
-    Serial.printf("WiFi Status: ");
-    Serial.println(network.status());
+  if (!network->connected()) {
+    Serial.printf("WiFi:%#04x\n", network->status());
   } else {
-    led.on();
+    led->on();
   }
   check_override_command();
-  const auto temp_c = sensor.getTempC();
-  if (Sensor::isValid(temp_c) && temp_c < TEMP_MAX) {
-    print_status();
-    print_temp_c(temp_c);
+  const auto temp_c = sensor->getTempC();
+  if (Sensor::isValid(temp_c)) {
     if (temp_c < TEMP_OFF) {
       check_fan_off();
     }
-    Serial.printf(", fan=%3s", fan.read() ? "ON" : "OFF");
-    if (temp_c >= TEMP_ON || fan.read()) {
+    if (temp_c >= TEMP_ON || fan->read()) {
       keep_fan_on(temp_c);
     } else {
-      network.send(temp_c);
+      network->send(temp_c);
       display_clear();
     }
-    println();
   } else {
     temp_read_error(temp_c);
   }
-  led.off();
+  led->off();
+  Serial.println();
   delay(DELAY);
 }

@@ -43,8 +43,7 @@ void Network::clientReceived(AsyncClient& client, const std::string& data) {
   const char last = data[data.length() - 1];
   const auto cmd = last != '\n' ? data : data.substr(0, data.length() - 1);
   print_client(client);
-  Serial.print(" command: ");
-  Serial.println(cmd.c_str());
+  Serial.printf(",cmd=%s\n", cmd.c_str());
 
   if (!cmd.empty()) {
     m_Commands.insert(m_Commands.begin(), cmd);
@@ -88,17 +87,16 @@ void Network::connect() {
 }
 
 void Network::connect(const char* ssid, const char* psk) {
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
+  Serial.printf("Connecting to %s\n", ssid);
   WiFi.begin(ssid, psk);
 }
 
 bool Network::connected() {
-    return WL_CONNECTED == status();
+  return WL_CONNECTED == status();
 }
 
 uint8_t Network::status() {
-    return WiFi.status();
+  return WiFi.status();
 }
 
 void Network::startServer() {

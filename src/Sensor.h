@@ -5,12 +5,15 @@
 #include <DallasTemperature.h>
 #include <OneWire.h>
 
-#include "Led.h"
-
 class Sensor final {
+  const uint8_t m_Pin;
   OneWire m_OneWire;
   DallasTemperature m_Sensor;
   uint8_t m_SensorAddress;
+
+  void printStatus(float temp_c = DEVICE_DISCONNECTED_C) const;
+
+  bool hasValidAddress() const;
 
   void getSensorAddress();
 

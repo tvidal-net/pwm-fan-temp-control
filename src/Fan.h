@@ -10,14 +10,16 @@ class Fan final {
   const uint8_t m_SW;
   const uint8_t m_PWM;
 
+  void printStatus(float pwm, uint16_t duty) const;
+
 public:
-  explicit Fan(uint8_t sw_pin, uint8_t pwm_pin);
+  Fan(uint8_t sw_pin, uint8_t pwm_pin);
 
   bool read() const;
 
   void off() const;
 
-  void write(float pwm) const;
+  void write(float value) const;
 };
 
 #endif //FAN_H

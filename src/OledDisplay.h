@@ -18,7 +18,7 @@ class OledDisplay final {
 
   void printValue(float value, char label, char unit);
 
-  void printText(uint8_t row, const __FlashStringHelper* text);
+  void printText(const __FlashStringHelper* text);
 
   void drawChart();
 
