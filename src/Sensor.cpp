@@ -12,16 +12,20 @@ void Sensor::getSensorAddress() {
   }
 }
 
-Sensor::Sensor(const uint8_t pin) :
+Sensor::Sensor(const uint8_t pin, const Led* led) :
+  m_Led(*led),
   m_OneWire(pin),
   m_Sensor(&m_OneWire) {}
 
 float Sensor::getTempC() {
+  m_Led.on();
+
   this->getSensorAddress();
   if (m_SensorAddress) {
     const auto [ok, _] = m_Sensor.requestTemperaturesByAddress(&m_SensorAddress);
     if (ok) {
       const float temp_c = m_Sensor.getTempC(&m_SensorAddress, RETRY_COUNT);
+      m_Led.off();
       return temp_c;
     }
   }
