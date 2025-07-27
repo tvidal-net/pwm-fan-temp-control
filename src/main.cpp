@@ -28,20 +28,19 @@
 #define FAN_PWM_PIN               D1
 #define FAN_SW_PIN                D7
 
-static
 float override_fan_pwm = PWM_OFF;
 
 static
-Fan fan(FAN_SW_PIN, FAN_PWM_PIN);
-
-static
-Sensor sensor(TEMP_SENSOR_PIN);
+Network network;
 
 static
 OledDisplay display;
 
+static const
+Fan fan(FAN_SW_PIN, FAN_PWM_PIN);
+
 static
-Network network;
+Sensor sensor(TEMP_SENSOR_PIN);
 
 static const
 Led led(LED_BUILTIN);
@@ -198,6 +197,7 @@ void loop() {
     if (temp_c < TEMP_OFF) {
       check_fan_off();
     }
+    Serial.printf(", fan=%3s", fan.read() ? "ON" : "OFF");
     if (temp_c >= TEMP_ON || fan.read()) {
       keep_fan_on(temp_c);
     } else {

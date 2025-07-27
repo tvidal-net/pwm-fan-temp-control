@@ -7,7 +7,7 @@
 
 #include <ESPAsyncTCP.h>
 
-class Network {
+class Network final {
   std::vector<std::string> m_Commands;
   std::vector<AsyncClient*> m_Clients;
   AsyncServer m_Server;

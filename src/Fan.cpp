@@ -4,7 +4,7 @@
 #define PWM_FREQ                   1000
 
 Fan::Fan(const uint8_t sw_pin, const uint8_t pwm_pin) :
-  m_SW(sw_pin),
+  m_SW(13),
   m_PWM(pwm_pin) {
   pinMode(m_SW, OUTPUT);
   pinMode(m_PWM, OUTPUT);
@@ -24,7 +24,8 @@ void Fan::off() const {
 }
 
 void Fan::write(const float pwm) const {
-  digitalWrite(m_SW, pwm ? LOW : HIGH);
+  Serial.printf("\nSW:%d, PWM: %d, value=%.1f\n", m_SW, m_PWM, pwm);
+  digitalWrite(m_SW, pwm ? HIGH : LOW);
   const uint16_t duty = constrain(
     pwm * PWM_RANGE,
     PWM_MIN * PWM_RANGE,

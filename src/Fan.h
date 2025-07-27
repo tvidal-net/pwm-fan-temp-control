@@ -7,8 +7,8 @@
 #define PWM_MIN                   0.01f
 
 class Fan final {
-  uint8_t m_SW;
-  uint8_t m_PWM;
+  const uint8_t m_SW;
+  const uint8_t m_PWM;
 
 public:
   explicit Fan(uint8_t sw_pin, uint8_t pwm_pin);
