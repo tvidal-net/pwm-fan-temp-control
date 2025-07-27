@@ -188,7 +188,11 @@ void setup() {
 void loop() {
   check_override_command();
   const auto temp_c = sensor.getTempC();
+  if (network.connected()) {
+    led.on();
+  }
   if (Sensor::isValid(temp_c) && temp_c < TEMP_MAX) {
+    led.off();
     print_status();
     print_temp_c(temp_c);
     if (temp_c < TEMP_OFF) {

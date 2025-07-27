@@ -89,24 +89,14 @@ void Network::connect(const char* ssid, const char* psk) {
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.begin(ssid, psk);
-  wl_status_t status;
-  while (WL_CONNECTED != (status = WiFi.status())) {
-    switch (status) {
-    case WL_CONNECTED:
-    case WL_DISCONNECTED:
-      Serial.print('.');
-      break;
+}
 
-    default:
-      Serial.print(',');
-      Serial.print(status);
-      break;
-    }
-    delay(500);
-  }
-  Serial.println();
-  Serial.print("WiFi Connected ip=");
-  Serial.println(localIP());
+bool Network::connected() {
+    return WL_CONNECTED == status();
+}
+
+uint8_t Network::status() {
+    return WiFi.status();
 }
 
 void Network::startServer() {

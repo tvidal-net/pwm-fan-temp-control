@@ -30,6 +30,12 @@ public:
   static
   void connect(const char* ssid, const char* psk);
 
+  static
+  bool connected();
+
+  static
+  uint8_t status();
+
   void startServer();
 
   std::string pop();
