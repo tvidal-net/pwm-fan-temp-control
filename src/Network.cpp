@@ -4,7 +4,6 @@
 #include "Network.h"
 
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
 #include <string>
 
 #define TCP_PORT                  1080
@@ -95,7 +94,7 @@ bool Network::connected() {
   return WL_CONNECTED == status();
 }
 
-uint8_t Network::status() {
+wl_status_t Network::status() {
   return WiFi.status();
 }
 

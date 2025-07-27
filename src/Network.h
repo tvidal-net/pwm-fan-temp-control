@@ -5,6 +5,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 
 class Network final {
@@ -34,7 +35,7 @@ public:
   bool connected();
 
   static
-  uint8_t status();
+  wl_status_t status();
 
   void startServer();
 

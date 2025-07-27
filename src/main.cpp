@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <string>
+#include <wl_definitions.h>
 
 #include "Fan.h"
 #include "Led.h"
@@ -105,6 +106,38 @@ float calc_fan_pwm(const float temp_c) {
 }
 
 static
+void check_network() {
+  if (!network->connected()) {
+    const wl_status_t status = network->status();
+    Serial.printf("WiFi:%#04x,", status);
+    switch (status) {
+    case WL_IDLE_STATUS:
+      Serial.println("IDLE");
+      break;
+    case WL_NO_SSID_AVAIL:
+      Serial.println("NO_SSID_AVAIL");
+      break;
+    case WL_CONNECT_FAILED:
+      Serial.println("CONNECT_FAILED");
+      break;
+    case WL_CONNECTION_LOST:
+      Serial.println("CONNECTION_LOST");
+      break;
+    case WL_WRONG_PASSWORD:
+      Serial.println("WRONG_PASSWORD");
+      break;
+    case WL_DISCONNECTED:
+      Serial.println("DISCONNECTED");
+      break;
+    default:
+      Serial.println("UNKNOWN");
+    }
+  } else {
+    led->on();
+  }
+}
+
+static
 void check_override_command() {
   const auto cmd = network->pop();
   if (!cmd.empty() && cmd[0] == 'F' && cmd.length() > 1) {
@@ -157,11 +190,7 @@ void setup() {
 }
 
 void loop() {
-  if (!network->connected()) {
-    Serial.printf("WiFi:%#04x\n", network->status());
-  } else {
-    led->on();
-  }
+  check_network();
   check_override_command();
   const auto temp_c = sensor->getTempC();
   if (Sensor::isValid(temp_c)) {
