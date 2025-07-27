@@ -107,32 +107,7 @@ float calc_fan_pwm(const float temp_c) {
 
 static
 void check_network() {
-  if (!network->connected()) {
-    const wl_status_t status = network->status();
-    Serial.printf("WiFi:%#04x,", status);
-    switch (status) {
-    case WL_IDLE_STATUS:
-      Serial.println("IDLE");
-      break;
-    case WL_NO_SSID_AVAIL:
-      Serial.println("NO_SSID_AVAIL");
-      break;
-    case WL_CONNECT_FAILED:
-      Serial.println("CONNECT_FAILED");
-      break;
-    case WL_CONNECTION_LOST:
-      Serial.println("CONNECTION_LOST");
-      break;
-    case WL_WRONG_PASSWORD:
-      Serial.println("WRONG_PASSWORD");
-      break;
-    case WL_DISCONNECTED:
-      Serial.println("DISCONNECTED");
-      break;
-    default:
-      Serial.println("UNKNOWN");
-    }
-  } else {
+  if (network->connected()) {
     led->on();
   }
 }
