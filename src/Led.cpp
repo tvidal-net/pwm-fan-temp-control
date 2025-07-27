@@ -30,9 +30,9 @@ void Led::on() const {
 
 void Led::blink(const uint8_t times) const {
   for (uint8_t i = 0; i < times; ++i) {
-    on();
+    digitalWrite(m_Pin, LOW);
     delay(BLINK_DELAY);
-    off();
+    digitalWrite(m_Pin, HIGH);
     delay(BLINK_DELAY);
   }
 }
