@@ -168,7 +168,7 @@ void loop() {
   check_network();
   check_override_command();
   const auto temp_c = sensor->getTempC();
-  if (Sensor::isValid(temp_c)) {
+  if (Sensor::isValid(temp_c) && temp_c <= TEMP_MAX) {
     if (temp_c < TEMP_OFF) {
       check_fan_off();
     }
