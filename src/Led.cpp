@@ -5,6 +5,7 @@
 Led::Led(const uint8_t pin) :
   m_Pin(pin) {
   pinMode(pin, OUTPUT);
+  off();
 }
 
 bool Led::read() const {
