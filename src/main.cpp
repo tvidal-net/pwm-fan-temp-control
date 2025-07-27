@@ -27,7 +27,7 @@
 #define OFF_TIME          60u * 1000
 
 #define TEMP_SENSOR_PIN           D2
-#define FAN_PWM_PIN               D4
+#define FAN_PWM_PIN               D1
 #define FAN_SW_PIN                D7
 
 static
