@@ -6,13 +6,11 @@
 #include <Arduino.h>
 #include <string>
 
-#include "Network.h"
-
-#include "OledDisplay.h"
-
 #include "Fan.h"
 #include "Led.h"
 #include "Sensor.h"
+#include "Network.h"
+#include "OledDisplay.h"
 
 #ifndef SERIAL_BAUD
 #define SERIAL_BAUD             9600
@@ -31,13 +29,13 @@
 #define FAN_SW_PIN                D7
 
 static
-const Led led;
-
-static
-Sensor sensor(TEMP_SENSOR_PIN, &led);
+float override_fan_pwm = PWM_OFF;
 
 static
 Fan fan(FAN_SW_PIN, FAN_PWM_PIN);
+
+static
+Sensor sensor(TEMP_SENSOR_PIN);
 
 static
 OledDisplay display;
@@ -45,8 +43,8 @@ OledDisplay display;
 static
 Network network;
 
-static
-float override_fan_pwm = PWM_OFF;
+static const
+Led led(LED_BUILTIN);
 
 static
 void print_error() {
@@ -189,6 +187,8 @@ void loop() {
   if (!network.connected()) {
     Serial.printf("WiFi Status: ");
     Serial.println(network.status());
+  } else {
+    led.on();
   }
   check_override_command();
   const auto temp_c = sensor.getTempC();
@@ -201,11 +201,13 @@ void loop() {
     if (temp_c >= TEMP_ON || fan.read()) {
       keep_fan_on(temp_c);
     } else {
+      network.send(temp_c);
       display_clear();
     }
     println();
   } else {
     temp_read_error(temp_c);
   }
+  led.off();
   delay(DELAY);
 }

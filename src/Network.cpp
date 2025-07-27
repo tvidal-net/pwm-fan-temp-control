@@ -46,8 +46,10 @@ void Network::clientReceived(AsyncClient& client, const std::string& data) {
   Serial.print(" command: ");
   Serial.println(cmd.c_str());
 
-  m_Commands.insert(m_Commands.begin(), cmd);
-  client.write("OK\n");
+  if (!cmd.empty()) {
+    m_Commands.insert(m_Commands.begin(), cmd);
+    client.write("OK\n");
+  }
 }
 
 void Network::clientDisconnected(const AsyncClient& client) {

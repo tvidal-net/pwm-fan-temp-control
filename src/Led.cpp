@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include "Led.h"
 
 #define BLINK_DELAY 100
@@ -9,7 +11,7 @@ Led::Led(const uint8_t pin) :
 }
 
 bool Led::read() const {
-  return digitalRead(m_Pin);
+  return !digitalRead(m_Pin);
 }
 
 void Led::off() const {
@@ -22,10 +24,9 @@ void Led::on() const {
 
 void Led::blink(const uint8_t times) const {
   for (uint8_t i = 0; i < times; ++i) {
-    this->off();
+    on();
     delay(BLINK_DELAY);
-    this->on();
+    off();
     delay(BLINK_DELAY);
   }
-  this->off();
 }

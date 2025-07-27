@@ -1,13 +1,11 @@
 #ifndef LED_H
 #define LED_H
 
-#include <Arduino.h>
-
 class Led final {
   const uint8_t m_Pin;
 
 public:
-  explicit Led(uint8_t pin = LED_BUILTIN);
+  explicit Led(uint8_t pin);
 
   bool read() const;
 
