@@ -86,7 +86,7 @@ void Network::connect() {
 }
 
 void Network::connect(const char* ssid, const char* psk) {
-  Serial.printf("Connecting to %s\n", ssid);
+  Serial.printf("SSID:%s\n", ssid);
   WiFi.begin(ssid, psk);
 }
 
@@ -94,6 +94,8 @@ bool Network::connected() {
   const wl_status_t network_status = status();
   Serial.printf("WiFi:%#04x,", network_status);
   switch (network_status) {
+  case WL_CONNECTED:
+    break;
   case WL_IDLE_STATUS:
     Serial.println("IDLE");
     break;
