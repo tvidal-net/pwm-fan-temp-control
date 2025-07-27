@@ -28,7 +28,7 @@ void Fan::write(const float pwm) const {
   const uint16_t duty = constrain(
     pwm * PWM_RANGE,
     PWM_MIN * PWM_RANGE,
-    PWM_RANGE - 1
+    PWM_RANGE
   );
-  analogWrite(m_PWM, duty);
+  analogWrite(m_PWM, PWM_RANGE - duty);
 }
