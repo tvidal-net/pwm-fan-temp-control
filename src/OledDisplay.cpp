@@ -27,22 +27,7 @@ void OledDisplay::clearRow(const int16_t row) {
 }
 
 void OledDisplay::printValue(const float value, const char label, const char unit) {
-  m_Display.write(label);
-  m_Display.print(F(" ="));
-  if (value < 100.0f) {
-    m_Display.write(' ');
-  }
-  if (value < 10.0f) {
-    m_Display.write(' ');
-  }
-  if (Sensor::isValid(value)) {
-    m_Display.write(' ');
-    m_Display.print(value, 1);
-    m_Display.write(' ');
-    m_Display.write(unit);
-  } else {
-    m_Display.print(value, 0);
-  }
+  m_Display.printf("%c =%5.1f %c", label, value, unit);
 }
 
 void OledDisplay::printText(const __FlashStringHelper* text) {
