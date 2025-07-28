@@ -9,13 +9,11 @@ class Sensor final {
   const uint8_t m_Pin;
   OneWire m_OneWire;
   DallasTemperature m_Sensor;
-  uint8_t m_SensorAddress;
+  DeviceAddress m_SensorAddress;
 
   void printStatus(float temp_c = DEVICE_DISCONNECTED_C) const;
 
-  bool hasValidAddress() const;
-
-  void getSensorAddress();
+  bool getSensorAddress();
 
 public:
   explicit Sensor(uint8_t pin);
