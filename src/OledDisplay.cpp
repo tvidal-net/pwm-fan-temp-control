@@ -13,6 +13,7 @@
 #define OLED_TEMP_ROW    0x01
 
 #define OLED_I2C_ADDRESS 0x3C
+#define OLED_CHART_SP    0x1D
 
 #define BUFFER_SIZE      0x80
 
@@ -60,7 +61,7 @@ void OledDisplay::drawChart() {
 }
 
 void OledDisplay::setChart(const float temp_c) {
-  m_Chart[m_ChartIndex] = OLED_HEIGHT + 0x10 - temp_c;
+  m_Chart[m_ChartIndex] = OLED_HEIGHT + OLED_CHART_SP - temp_c;
   m_ChartIndex = (m_ChartIndex + 1) % OLED_WIDTH;
   drawChart();
 }
