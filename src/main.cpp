@@ -29,6 +29,9 @@
 #define FAN_PWM_PIN               D1
 #define FAN_SW_PIN                D7
 
+static constexpr
+float override_factor = 100.0f / 9.0f;
+
 static
 float override_fan_pwm = PWM_OFF;
 
@@ -38,13 +41,13 @@ Network* network;
 static
 OledDisplay* display;
 
-static
+static const
 Fan* fan;
 
 static
 Sensor* sensor;
 
-static
+static const
 Led* led;
 
 static
@@ -102,7 +105,7 @@ float calc_fan_pwm(const float temp_c) {
                       ? override_fan_pwm
                       : (temp_c - TEMP_OFF) / (TEMP_MAX - TEMP_OFF);
 
-  return pwm <= PWM_OFF ? PWM_MIN : pwm;
+  return pwm < PWM_MIN ? PWM_MIN : pwm;
 }
 
 static
@@ -117,7 +120,7 @@ void check_override_command() {
   const auto cmd = network->pop();
   if (!cmd.empty() && cmd[0] == 'F' && cmd.length() > 1) {
     const uint8_t value = cmd[1] - '0';
-    override_fan_pwm = 0.11112f * value;
+    override_fan_pwm = override_factor * value;
 
     if (override_fan_pwm && !fan->read()) {
       fan->write(override_fan_pwm);
