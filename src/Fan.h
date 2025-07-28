@@ -5,6 +5,7 @@
 
 #define PWM_OFF                   0.00f
 #define PWM_MIN                   0.01f
+#define PWM_MAX                   1.00f
 
 class Fan final {
   const uint8_t m_SW;

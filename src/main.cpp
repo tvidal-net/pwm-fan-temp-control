@@ -105,7 +105,7 @@ float calc_fan_pwm(const float temp_c) {
                       ? override_fan_pwm
                       : (temp_c - TEMP_OFF) / (TEMP_MAX - TEMP_OFF);
 
-  return pwm < PWM_MIN ? PWM_MIN : pwm;
+  return constrain(pwm, PWM_MIN, PWM_MAX);
 }
 
 static
@@ -137,8 +137,9 @@ void check_fan_off() {
     if (elapsed > OFF_TIME) {
       off_time = 0;
       off();
+    } else {
+      Serial.printf("OFF:%lus,", (OFF_TIME - elapsed) / 1000);
     }
-    Serial.printf("OFF:%lus\n", (OFF_TIME - elapsed) / 1000);
   } else if (fan->read()) {
     off_time = millis();
   }
@@ -171,15 +172,15 @@ void loop() {
   check_network();
   check_override_command();
   const auto temp_c = sensor->getTempC();
-  if (Sensor::isValid(temp_c) && temp_c <= TEMP_MAX) {
-    if (temp_c < TEMP_OFF) {
-      check_fan_off();
-    }
+  if (Sensor::isValid(temp_c)) {
     if (temp_c >= TEMP_ON || fan->read()) {
       keep_fan_on(temp_c);
     } else {
       network->send(temp_c);
       display_clear();
+    }
+    if (temp_c < TEMP_OFF) {
+      check_fan_off();
     }
   } else {
     temp_read_error(temp_c);
