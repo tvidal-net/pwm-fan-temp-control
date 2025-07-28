@@ -61,7 +61,8 @@ void OledDisplay::drawChart() {
 }
 
 void OledDisplay::setChart(const float temp_c) {
-  m_Chart[m_ChartIndex] = OLED_HEIGHT + OLED_CHART_SP - temp_c;
+  const auto value = OLED_HEIGHT + OLED_CHART_SP - temp_c;
+  m_Chart[m_ChartIndex] = constrain(value, OLED_CHART_SP, OLED_HEIGHT - 1);
   m_ChartIndex = (m_ChartIndex + 1) % OLED_WIDTH;
   drawChart();
 }
