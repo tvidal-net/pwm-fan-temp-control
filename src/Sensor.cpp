@@ -24,6 +24,12 @@ void Sensor::printStatus(const float temp_c) const {
   Serial.printf("value=%.1f°C\n", temp_c);
 }
 
+void Sensor::reset() {
+  memset(m_SensorAddress, 0xFF, sizeof(m_SensorAddress));
+  m_Sensor.setWaitForConversion(true);
+  m_Sensor.begin();
+}
+
 bool Sensor::getSensorAddress() {
   uint8_t retries = RETRY_COUNT;
   bool valid_address = false;
@@ -33,7 +39,7 @@ bool Sensor::getSensorAddress() {
       print_address(m_SensorAddress);
       return true;
     }
-    delay(50);
+    delay(200);
   }
   return valid_address;
 }
@@ -42,8 +48,7 @@ Sensor::Sensor(const uint8_t pin) :
   m_Pin(pin),
   m_OneWire(pin),
   m_Sensor(&m_OneWire) {
-  m_Sensor.setWaitForConversion(true);
-  m_Sensor.begin();
+  reset();
 }
 
 float Sensor::getTempC() {
@@ -55,7 +60,7 @@ float Sensor::getTempC() {
       return temp_c;
     }
     printStatus(FAILED_REQUEST);
-    memset(m_SensorAddress, 0, sizeof(m_SensorAddress));
+    reset();
   }
   printStatus(FAILED_ADDRESS);
   print_address(m_SensorAddress);

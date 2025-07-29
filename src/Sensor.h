@@ -13,6 +13,8 @@ class Sensor final {
 
   void printStatus(float temp_c) const;
 
+  void reset();
+
   bool getSensorAddress();
 
 public:
