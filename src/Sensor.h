@@ -11,7 +11,7 @@ class Sensor final {
   DallasTemperature m_Sensor;
   DeviceAddress m_SensorAddress;
 
-  void printStatus(float temp_c = DEVICE_DISCONNECTED_C) const;
+  void printStatus(float temp_c) const;
 
   bool getSensorAddress();
 

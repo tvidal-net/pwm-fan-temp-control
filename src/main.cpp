@@ -77,6 +77,8 @@ void temp_read_error(const float temp_c) {
 static
 void setup_serial() {
   Serial.begin(SERIAL_BAUD);
+
+  delay(DELAY);
   Serial.println("\n\npwm-fan-temp-control");
 }
 
@@ -166,6 +168,8 @@ void setup() {
 
   network = new Network();
   setup_network();
+
+  delay(DELAY);
 }
 
 void loop() {
